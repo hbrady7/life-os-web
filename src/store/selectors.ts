@@ -22,7 +22,6 @@ import type {
   LifeGoal,
   Meal,
   MorningRoutineItem,
-  Person,
   PhotoMeta,
   SavedMeal,
 } from "@/lib/types";
@@ -176,9 +175,6 @@ export function useBlocksRaw() {
 export function useEnergyRaw() {
   return useStore((s) => s.energy);
 }
-export function usePeopleRaw() {
-  return useStore((s) => s.people);
-}
 export function useMealsRaw() {
   return useStore((s) => s.meals);
 }
@@ -288,39 +284,6 @@ export function averageOfPeriodValues(values: EnergyLog["values"]): number | nul
   return nums.reduce((a, b) => a + b, 0) / nums.length;
 }
 
-/* ---------- PEOPLE ---------- */
-
-export function daysSinceLastContact(p: Person, now = new Date()): number {
-  const last = p.history[0];
-  const base = last ? new Date(last.date) : new Date(p.createdAt);
-  const diff = (now.getTime() - base.getTime()) / (1000 * 60 * 60 * 24);
-  return Math.floor(diff);
-}
-
-export function personStatus(
-  p: Person,
-  now = new Date()
-): "good" | "due-soon" | "overdue" {
-  const days = daysSinceLastContact(p, now);
-  if (days >= p.frequencyDays) return "overdue";
-  if (days >= p.frequencyDays * 0.8) return "due-soon";
-  return "good";
-}
-
-export function useOverduePeople() {
-  return useStore(
-    useShallow((s) => {
-      const now = new Date();
-      return s.people
-        .filter((p) => personStatus(p, now) === "overdue")
-        .sort(
-          (a, b) =>
-            daysSinceLastContact(b, now) - daysSinceLastContact(a, now)
-        );
-    })
-  );
-}
-
 /* ---------- NUTRITION ---------- */
 
 export function useMealsForDay(date: DateStr): Meal[] {
@@ -385,7 +348,7 @@ export function useLifeGoalById(id: string | null | undefined) {
 }
 
 /** Suppress unused-var warnings on types only re-exported for callers. */
-export type { Block, BlockType, EnergyPeriod, JournalEntry, Person, Meal, SavedMeal, PhotoMeta, BodyMeasurement, LifeGoal };
+export type { Block, BlockType, EnergyPeriod, JournalEntry, Meal, SavedMeal, PhotoMeta, BodyMeasurement, LifeGoal };
 
 export function useLastNHabitHistory(habit: Habit, n: number) {
   const dates = lastNDates(n);
@@ -630,26 +593,6 @@ export function getOverseerContext() {
           };
         })()
       : null,
-    peopleOverdue: (() => {
-      const now = new Date();
-      return s.people
-        .map((p) => {
-          const last = p.history[0];
-          const base = last ? new Date(last.date) : new Date(p.createdAt);
-          const days = Math.floor(
-            (now.getTime() - base.getTime()) / (1000 * 60 * 60 * 24)
-          );
-          return { p, days, overdue: days >= p.frequencyDays };
-        })
-        .filter((x) => x.overdue)
-        .sort((a, b) => b.days - a.days)
-        .slice(0, 5)
-        .map(({ p, days }) => ({
-          name: p.name,
-          relationship: p.relationship,
-          days,
-        }));
-    })(),
     bodyLatest: (() => {
       const sorted = [...s.body].sort((a, b) =>
         b.date.localeCompare(a.date)

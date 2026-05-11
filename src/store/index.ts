@@ -11,7 +11,6 @@ import {
   Block,
   BlockType,
   BodyMeasurement,
-  ContactEvent,
   Day,
   EnergyLog,
   EnergyPeriod,
@@ -29,7 +28,6 @@ import {
   MorningRoutineItem,
   MorningRoutineSettings,
   NutritionTargets,
-  Person,
   PhotoAngle,
   PhotoMeta,
   Plan,
@@ -64,7 +62,6 @@ type State = {
   routine: MorningRoutineItem[];
   blocks: Block[];
   energy: Record<DateStr, EnergyLog>;
-  people: Person[];
   meals: Meal[];
   savedMeals: SavedMeal[];
   body: BodyMeasurement[];
@@ -152,13 +149,6 @@ type Actions = {
   setEnergy: (date: DateStr, period: EnergyPeriod, value: number) => void;
   clearEnergy: (date: DateStr, period: EnergyPeriod) => void;
 
-  // people
-  addPerson: (p: Omit<Person, "id" | "history" | "createdAt">) => void;
-  updatePerson: (id: string, patch: Partial<Person>) => void;
-  removePerson: (id: string) => void;
-  logContact: (id: string, note?: string) => void;
-  removeContact: (personId: string, contactId: string) => void;
-
   // nutrition
   addMeal: (m: Omit<Meal, "id" | "createdAt">) => void;
   updateMeal: (id: string, patch: Partial<Meal>) => void;
@@ -242,7 +232,6 @@ const initialState: State = {
   routine: [],
   blocks: [],
   energy: {},
-  people: [],
   meals: [],
   savedMeals: [],
   body: [],
@@ -651,45 +640,6 @@ export const useStore = create<State & Actions>()(
           };
         }),
 
-      addPerson: (p) =>
-        set((s) => ({
-          people: [
-            ...s.people,
-            {
-              ...p,
-              id: uid(),
-              history: [],
-              createdAt: new Date().toISOString(),
-            },
-          ],
-        })),
-      updatePerson: (id, patch) =>
-        set((s) => ({
-          people: s.people.map((p) => (p.id === id ? { ...p, ...patch } : p)),
-        })),
-      removePerson: (id) =>
-        set((s) => ({ people: s.people.filter((p) => p.id !== id) })),
-      logContact: (id, note) =>
-        set((s) => ({
-          people: s.people.map((p) => {
-            if (p.id !== id) return p;
-            const event: ContactEvent = {
-              id: uid(),
-              date: new Date().toISOString(),
-              note: note?.trim() || undefined,
-            };
-            return { ...p, history: [event, ...p.history] };
-          }),
-        })),
-      removeContact: (personId, contactId) =>
-        set((s) => ({
-          people: s.people.map((p) =>
-            p.id === personId
-              ? { ...p, history: p.history.filter((h) => h.id !== contactId) }
-              : p
-          ),
-        })),
-
       addMeal: (m) =>
         set((s) => ({
           meals: [
@@ -880,7 +830,6 @@ export const useStore = create<State & Actions>()(
             routine: s.routine,
             blocks: s.blocks,
             energy: s.energy,
-            people: s.people,
             meals: s.meals,
             savedMeals: s.savedMeals,
             body: s.body,
@@ -921,7 +870,6 @@ export const useStore = create<State & Actions>()(
             routine: state.routine ?? [],
             blocks: state.blocks ?? [],
             energy: state.energy ?? {},
-            people: state.people ?? [],
             meals: state.meals ?? [],
             savedMeals: state.savedMeals ?? [],
             body: state.body ?? [],
@@ -980,7 +928,6 @@ export const useStore = create<State & Actions>()(
           routine: p.routine ?? current.routine,
           blocks: p.blocks ?? current.blocks,
           energy: p.energy ?? current.energy,
-          people: p.people ?? current.people,
           meals: p.meals ?? current.meals,
           savedMeals: p.savedMeals ?? current.savedMeals,
           body: p.body ?? current.body,

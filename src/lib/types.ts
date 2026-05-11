@@ -166,41 +166,6 @@ export type EnergyLog = {
   values: Partial<Record<EnergyPeriod, number>>; // 1..10
 };
 
-/* ---------- PEOPLE ---------- */
-
-export type ContactEvent = {
-  id: string;
-  /** ISO datetime */
-  date: string;
-  note?: string;
-};
-
-export type Person = {
-  id: string;
-  name: string;
-  relationship: string;
-  frequencyDays: number;
-  notes?: string;
-  history: ContactEvent[];
-  createdAt: string;
-};
-
-export const PEOPLE_RELATIONSHIP_PRESETS = [
-  "Family",
-  "Friend",
-  "Mentor",
-  "Colleague",
-  "Partner",
-  "Other",
-];
-
-export const FREQUENCY_PRESETS: Array<{ label: string; days: number }> = [
-  { label: "Weekly", days: 7 },
-  { label: "Biweekly", days: 14 },
-  { label: "Monthly", days: 30 },
-  { label: "Quarterly", days: 90 },
-];
-
 /* ---------- NUTRITION ---------- */
 
 export type Meal = {

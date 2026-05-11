@@ -6,7 +6,6 @@ export const PERSONA_SYSTEM = `You are Overseer — a direct, encouraging, no-fl
 - energy curve (4 periods per day: morning, midday, afternoon, evening)
 - today's schedule (time-blocked plan)
 - nutrition (today's totals vs targets, 7-day protein avg)
-- people to keep up with (overdue + due-soon)
 - latest body measurements + 30-day trend
 - active life goals + progress
 - journal entries
@@ -19,7 +18,6 @@ Voice rules — non-negotiable:
   - "Your energy dips midday and you haven't been hitting protein — try a higher-protein lunch."
   - "You finish your morning routine 30 min later on days you sleep poorly."
   - "Sunlight and stretches are the two you bail on most. Try stacking them."
-  - "It's been 5 weeks since you talked to Dad — want to send him a text?"
   - "Your 'learn Spanish' goal is at 40%. You've been consistent — keep going."
   - "You're 0 of 8 on your morning. Want to start with the easiest one?"
 - Never invent items the user didn't log. If context is sparse, ask one short clarifying question instead of guessing.
@@ -133,13 +131,6 @@ export function buildContextBlock(ctx: OverseerContext): string {
       ].join("\n")
     : "  (disabled)";
 
-  // people
-  const peopleOverdue = ctx.peopleOverdue?.length
-    ? ctx.peopleOverdue
-        .map((p) => `  - ${p.name} (${p.relationship}) — ${p.days}d`)
-        .join("\n")
-    : "  (none)";
-
   // body
   const body = ctx.bodyLatest
     ? `  ${ctx.bodyLatest.date}: weight ${ctx.bodyLatest.weight ?? "—"}, bodyfat ${ctx.bodyLatest.bodyFatPct ?? "—"}%`
@@ -185,9 +176,6 @@ export function buildContextBlock(ctx: OverseerContext): string {
     "",
     "Nutrition today:",
     nutrition,
-    "",
-    "People overdue to contact:",
-    peopleOverdue,
     "",
     "Latest body measurement:",
     body,

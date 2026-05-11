@@ -10,7 +10,6 @@ import { HabitsGrid } from "@/components/today/habits-grid";
 import { Workouts } from "@/components/today/workouts";
 import { PlanTomorrowSection } from "@/components/today/plan-tomorrow";
 import { WinsSection } from "@/components/today/wins";
-import { ReachOutWidget } from "@/components/today/reach-out";
 import { StrugglesSection } from "@/components/today/struggles";
 import { ReflectionCard } from "@/components/today/reflection";
 
@@ -28,7 +27,6 @@ export default function Page() {
       <Workouts />
       <PlanTomorrowSection />
       <WinsSection />
-      <ReachOutWidget />
       <StrugglesSection />
       <ReflectionCard />
     </Screen>

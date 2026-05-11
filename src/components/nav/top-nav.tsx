@@ -11,7 +11,6 @@ const TABS = [
   { href: "/stats", label: "Stats" },
   { href: "/habits", label: "Habits" },
   { href: "/journal", label: "Journal" },
-  { href: "/people", label: "People" },
   { href: "/life", label: "Life" },
   { href: "/body", label: "Body" },
 ] as const;
