@@ -375,10 +375,16 @@ function RecordingScreen({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // 100ms timer for monospace clock
+  // Timer for the MM:SS display + auto-stop guard. We only do anything
+  // once the recorder has actually started (startMsRef set to Date.now()
+  // after rec.start()). Without this guard the first tick happens while
+  // getUserMedia is still pending, computes (Date.now() - 0)/1000 ≈ 1.78e9,
+  // hits the >= MAX_RECORD_SEC branch, calls stop(), and latches
+  // stoppedRef = true — permanently disabling the manual Stop button.
   React.useEffect(() => {
     const id = window.setInterval(() => {
       if (stoppedRef.current) return;
+      if (startMsRef.current === 0) return;
       const sec = Math.floor((Date.now() - startMsRef.current) / 1000);
       setElapsed(sec);
       if (sec >= MAX_RECORD_SEC) {
@@ -394,6 +400,20 @@ function RecordingScreen({
   const cleanup = () => {
     if (rafRef.current != null) cancelAnimationFrame(rafRef.current);
     rafRef.current = null;
+    const rec = recorderRef.current;
+    if (rec) {
+      rec.ondataavailable = null;
+      rec.onstop = null;
+      rec.onerror = null;
+      if (rec.state !== "inactive") {
+        try {
+          rec.stop();
+        } catch {
+          // ignore
+        }
+      }
+    }
+    recorderRef.current = null;
     streamRef.current?.getTracks().forEach((t) => t.stop());
     streamRef.current = null;
     if (audioCtxRef.current && audioCtxRef.current.state !== "closed") {
