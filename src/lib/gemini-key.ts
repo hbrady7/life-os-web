@@ -9,6 +9,9 @@ export function resolveGeminiApiKey(): string | null {
     process.env.GOOGLE_API_KEY,
     process.env.GOOGLE_GENERATIVE_AI_API_KEY,
     process.env.GOOGLE_GENAI_API_KEY,
+    process.env.gemini,
+    process.env.GEMINI,
+    process.env.GEMINI_KEY,
   ];
   for (const raw of candidates) {
     if (!raw) continue;
@@ -23,4 +26,7 @@ export const GEMINI_KEY_NAMES = [
   "GOOGLE_API_KEY",
   "GOOGLE_GENERATIVE_AI_API_KEY",
   "GOOGLE_GENAI_API_KEY",
+  "gemini",
+  "GEMINI",
+  "GEMINI_KEY",
 ] as const;
