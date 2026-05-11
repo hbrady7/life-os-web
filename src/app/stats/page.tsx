@@ -13,6 +13,7 @@ import {
 } from "@/components/stats/charts";
 import { StreakLeaderboard } from "@/components/stats/streak-leaderboard";
 import { MorningRoutineStatsCard } from "@/components/stats/morning-routine-card";
+import { EveningRoutineStatsCard } from "@/components/stats/evening-routine-card";
 import { TimeSpentCard } from "@/components/stats/time-spent-card";
 import { EnergyCurveCard } from "@/components/stats/energy-curve-card";
 import { NutritionStatsCard } from "@/components/stats/nutrition-card";
@@ -45,6 +46,7 @@ export default function StatsPage() {
       <TimeSpentCard days={days} />
       <RecurringGoalsCard days={days} />
       <MorningRoutineStatsCard days={days} />
+      <EveningRoutineStatsCard days={days} />
       <EnergyCurveCard days={days} />
       <MoodEnergyChart days={days} />
       <SleepChart days={days} />

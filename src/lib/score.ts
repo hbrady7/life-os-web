@@ -1,4 +1,5 @@
 import type {
+  EveningRoutineItem,
   Goal,
   Habit,
   HealthLog,
@@ -7,10 +8,16 @@ import type {
   DateStr,
 } from "./types";
 
+/** Common shape for morning + evening routine items. */
+export type RoutineItemLike = {
+  history: Record<DateStr, { completed: boolean; completedAt?: string }>;
+};
+
 type ScoreInputs = {
   goalsForDay: Goal[];
   habits: Habit[];
   routine: MorningRoutineItem[];
+  evening?: EveningRoutineItem[];
   health?: HealthLog;
   journalsForDay: JournalEntry[];
   date: DateStr;
@@ -18,13 +25,18 @@ type ScoreInputs = {
 
 /**
  * Compute a 0..1 score for a given day.
- * weights: goals 35%, habits 25%, morning routine 25%,
- *          journaled 10%, sleep logged 5%
+ * weights: goals 30%, habits 20%, morning routine 20%,
+ *          evening routine 20%, journaled 5%, sleep logged 5%
+ *
+ * Pre-evening-routine codepaths pass `evening` as undefined; we drop
+ * its 20% and proportionally rescale so the legacy score still sums
+ * to 100%.
  */
 export function dayScore({
   goalsForDay,
   habits,
   routine,
+  evening,
   health,
   journalsForDay,
   date,
@@ -43,21 +55,28 @@ export function dayScore({
     ? routine.filter((r) => r.history[date]?.completed).length / totalRoutine
     : 0;
 
+  const totalEvening = evening?.length ?? 0;
+  const doneEvening = totalEvening
+    ? (evening ?? []).filter((r) => r.history[date]?.completed).length /
+      totalEvening
+    : 0;
+
   const journaled = journalsForDay.length > 0 ? 1 : 0;
   const sleepLogged = health?.sleepHours ? 1 : 0;
 
   const score =
-    goalsPart * 0.35 +
-    doneHabits * 0.25 +
-    doneRoutine * 0.25 +
-    journaled * 0.1 +
+    goalsPart * 0.3 +
+    doneHabits * 0.2 +
+    doneRoutine * 0.2 +
+    doneEvening * 0.2 +
+    journaled * 0.05 +
     sleepLogged * 0.05;
 
   return Math.max(0, Math.min(1, score));
 }
 
 export function routineStreak(
-  routine: MorningRoutineItem[],
+  routine: RoutineItemLike[],
   today: DateStr
 ): number {
   if (!routine.length) return 0;
@@ -82,7 +101,7 @@ export function routineStreak(
 }
 
 export function routineLongestStreak(
-  routine: MorningRoutineItem[]
+  routine: RoutineItemLike[]
 ): number {
   if (!routine.length) return 0;
   // collect all dates where ALL items completed

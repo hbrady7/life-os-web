@@ -235,6 +235,8 @@ export default function SettingsPage() {
         </Button>
       </Card>
 
+      <EveningRoutineSettingsCard />
+
       <NutritionSettingsCard />
 
       <VoiceJournalSettingsCard />
@@ -547,6 +549,70 @@ function RecurringGoalsSettingsCard() {
               onClick={() => {
                 resetRecurringGenerations();
                 runRecurringGeneration();
+                setConfirmReset(false);
+                haptic("warn");
+              }}
+            >
+              Reset
+            </Button>
+          </div>
+        }
+      >
+        <div className="text-sm text-[var(--color-fg-2)]" />
+      </Modal>
+    </Card>
+  );
+}
+
+function EveningRoutineSettingsCard() {
+  const settings = useStore((s) => s.settings.eveningRoutine);
+  const setEveningSettings = useStore((s) => s.setEveningSettings);
+  const resetEvening = useStore((s) => s.resetEveningToDefaults);
+  const [confirmReset, setConfirmReset] = React.useState(false);
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Evening Routine</CardTitle>
+      </CardHeader>
+      <div className="space-y-1">
+        <ToggleRow
+          label="Show on Today screen"
+          checked={settings.showOnTodayScreen}
+          onChange={(v) => setEveningSettings({ showOnTodayScreen: v })}
+        />
+        <ToggleRow
+          label="Auto-collapse when complete"
+          checked={settings.autoCollapseWhenDone}
+          onChange={(v) => setEveningSettings({ autoCollapseWhenDone: v })}
+        />
+        <ToggleRow
+          label="Show streak count"
+          checked={settings.showStreak}
+          onChange={(v) => setEveningSettings({ showStreak: v })}
+        />
+      </div>
+      <Button
+        variant="secondary"
+        className="w-full mt-3"
+        onClick={() => setConfirmReset(true)}
+      >
+        <RotateCcw size={14} />
+        Reset to defaults
+      </Button>
+      <Modal
+        open={confirmReset}
+        onClose={() => setConfirmReset(false)}
+        title="Reset evening routine?"
+        description="Replaces your current items with the original 6 defaults. History is kept."
+        footer={
+          <div className="flex items-center justify-end gap-2">
+            <Button variant="ghost" onClick={() => setConfirmReset(false)}>
+              Cancel
+            </Button>
+            <Button
+              variant="danger"
+              onClick={() => {
+                resetEvening();
                 setConfirmReset(false);
                 haptic("warn");
               }}

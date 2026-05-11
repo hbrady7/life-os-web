@@ -3,6 +3,7 @@ import { TodayHeader } from "@/components/today/header";
 import { PulseStrip } from "@/components/today/pulse-strip";
 import { MorningBriefing } from "@/components/today/morning-briefing";
 import { MorningRoutine } from "@/components/today/morning-routine";
+import { EveningRoutine } from "@/components/today/evening-routine";
 import { Nutrition } from "@/components/today/nutrition";
 import { Goals } from "@/components/today/goals";
 import { Schedule } from "@/components/today/schedule";
@@ -28,6 +29,7 @@ export default function Page() {
       <PlanTomorrowSection />
       <WinsSection />
       <StrugglesSection />
+      <EveningRoutine />
       <ReflectionCard />
     </Screen>
   );

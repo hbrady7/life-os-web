@@ -16,6 +16,7 @@ import type {
   DateStr,
   EnergyLog,
   EnergyPeriod,
+  EveningRoutineItem,
   Goal,
   Habit,
   JournalEntry,
@@ -140,6 +141,7 @@ export function useScoreFor(date: DateStr): number {
       goalsForDay,
       habits: s.habits,
       routine: s.routine,
+      evening: s.evening,
       health,
       journalsForDay,
       date,
@@ -394,6 +396,76 @@ export function useRoutineAvgCompletionMin(days: number): number | null {
   });
 }
 
+/* ---------- EVENING ROUTINE ---------- */
+
+export function useEveningRoutine(): EveningRoutineItem[] {
+  return useStore(
+    useShallow((s) => [...s.evening].sort((a, b) => a.order - b.order))
+  );
+}
+
+export function useEveningRaw() {
+  return useStore((s) => s.evening);
+}
+
+export function useEveningStreak(): number {
+  const today = todayStr();
+  return useStore((s) => routineStreak(s.evening, today));
+}
+
+export function useEveningLongestStreak(): number {
+  return useStore((s) => routineLongestStreak(s.evening));
+}
+
+export function useEveningCompletionRate(days: number): number {
+  return useStore((s) => {
+    if (!s.evening.length) return 0;
+    const dates = lastNDates(days);
+    const totalItems = dates.length * s.evening.length;
+    const completed = dates.reduce(
+      (acc, d) =>
+        acc + s.evening.filter((r) => r.history[d]?.completed).length,
+      0
+    );
+    return totalItems ? completed / totalItems : 0;
+  });
+}
+
+export function useEveningAvgCompletionMin(days: number): number | null {
+  return useStore((s) => {
+    if (!s.evening.length) return null;
+    const dates = lastNDates(days);
+    const finishMins: number[] = [];
+    for (const date of dates) {
+      const stamps: number[] = [];
+      let allDone = true;
+      for (const r of s.evening) {
+        const entry = r.history[date];
+        if (!entry?.completed) {
+          allDone = false;
+          break;
+        }
+        if (entry.completedAt) {
+          const t = new Date(entry.completedAt);
+          let mins = t.getHours() * 60 + t.getMinutes();
+          // Evening completions can land after midnight — treat them as
+          // a continuation of the prior evening for "average wind-down time"
+          // by shifting 0-3am into the 24-27h range.
+          if (mins < 3 * 60) mins += 24 * 60;
+          stamps.push(mins);
+        }
+      }
+      if (allDone && stamps.length) {
+        finishMins.push(Math.max(...stamps));
+      }
+    }
+    if (!finishMins.length) return null;
+    return Math.round(
+      finishMins.reduce((a, b) => a + b, 0) / finishMins.length
+    );
+  });
+}
+
 /* ---------- RECURRING GOALS ---------- */
 
 export function useRecurringGoals(): RecurringGoal[] {
@@ -469,7 +541,7 @@ export function useRecurringCompletionRate(
 export { patternSummary };
 
 export function computePerItemRate(
-  routine: MorningRoutineItem[],
+  routine: MorningRoutineItem[] | EveningRoutineItem[],
   days: number
 ): Array<{ id: string; name: string; icon: string; pct: number }> {
   const dates = lastNDates(days);
@@ -554,6 +626,50 @@ export function getOverseerContext() {
       doneToday: !!h.history[today],
       streak: streakForHabit(h.history, today),
     })),
+    eveningRoutine: (() => {
+      const today2 = today;
+      const totalE = s.evening.length;
+      const doneE = s.evening.filter(
+        (r) => r.history[today2]?.completed
+      ).length;
+      const eveningStamps = s.evening
+        .map((r) => r.history[today2]?.completedAt)
+        .filter(Boolean) as string[];
+      const completedAtE =
+        eveningStamps.length === totalE && totalE > 0
+          ? [...eveningStamps].sort().slice(-1)[0]
+          : null;
+      const last7E = last7.reduce(
+        (acc, d) =>
+          acc + s.evening.filter((r) => r.history[d]?.completed).length,
+        0
+      );
+      const last7TotalE = last7.length * totalE;
+      const skippedE = s.evening
+        .map((r) => ({
+          name: r.name,
+          skipped: last14.filter((d) => !r.history[d]?.completed).length,
+        }))
+        .sort((a, b) => b.skipped - a.skipped)
+        .slice(0, 5);
+      return {
+        total: totalE,
+        doneToday: doneE,
+        completedAtToday: completedAtE,
+        currentStreak: routineStreak(s.evening, today2),
+        last7DayRatePct: last7TotalE
+          ? Math.round((last7E / last7TotalE) * 100)
+          : 0,
+        items: [...s.evening]
+          .sort((a, b) => a.order - b.order)
+          .map((r) => ({
+            name: r.name,
+            doneToday: !!r.history[today2]?.completed,
+            completedAt: r.history[today2]?.completedAt,
+          })),
+        mostSkipped14d: skippedE,
+      };
+    })(),
     morningRoutine: {
       total: s.routine.length,
       doneToday: routineTodayDone,

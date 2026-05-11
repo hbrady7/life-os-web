@@ -11,6 +11,7 @@ import { useStore } from "@/store";
 import {
   AccentColor,
   DEFAULT_MORNING_ROUTINE,
+  DEFAULT_EVENING_ROUTINE,
   HABIT_TEMPLATES,
   Units,
 } from "@/lib/types";
@@ -37,6 +38,7 @@ export default function OnboardingPage() {
   const addHabit = useStore((s) => s.addHabit);
   const updateSettings = useStore((s) => s.updateSettings);
   const resetRoutine = useStore((s) => s.resetRoutineToDefaults);
+  const resetEvening = useStore((s) => s.resetEveningToDefaults);
   const setNutritionTargets = useStore((s) => s.setNutritionTargets);
 
   const [step, setStep] = React.useState(0);
@@ -46,6 +48,9 @@ export default function OnboardingPage() {
   const [picked, setPicked] = React.useState<Set<string>>(new Set());
   const [routinePicked, setRoutinePicked] = React.useState<Set<string>>(
     () => new Set(DEFAULT_MORNING_ROUTINE.map((d) => d.name))
+  );
+  const [eveningPicked, setEveningPicked] = React.useState<Set<string>>(
+    () => new Set(DEFAULT_EVENING_ROUTINE.map((d) => d.name))
   );
   const [nutritionEnabled, setNutritionEnabled] = React.useState(false);
   const [calTarget, setCalTarget] = React.useState("");
@@ -78,6 +83,14 @@ export default function OnboardingPage() {
       return next;
     });
 
+  const toggleEveningPick = (name: string) =>
+    setEveningPicked((s) => {
+      const next = new Set(s);
+      if (next.has(name)) next.delete(name);
+      else next.add(name);
+      return next;
+    });
+
   const finish = () => {
     setUnits({ weight, liquid } as Units);
     setAccent(accent);
@@ -86,6 +99,7 @@ export default function OnboardingPage() {
       if (t) addHabit(t.name, t.icon);
     }
     resetRoutine(Array.from(routinePicked));
+    resetEvening(Array.from(eveningPicked));
 
     if (nutritionEnabled) {
       const toNum = (v: string) => {
@@ -284,6 +298,51 @@ export default function OnboardingPage() {
           </div>
           <div className="mt-3 text-center text-xs text-[var(--color-fg-2)]">
             {routinePicked.size} of {DEFAULT_MORNING_ROUTINE.length} kept
+          </div>
+        </StepShell>
+      ),
+      canNext: true,
+    },
+    {
+      render: (
+        <StepShell
+          title="Build your evening"
+          subtitle="Check the ones you actually want. You can change these anytime."
+        >
+          <div className="space-y-1.5">
+            {DEFAULT_EVENING_ROUTINE.map((r) => {
+              const on = eveningPicked.has(r.name);
+              return (
+                <button
+                  key={r.name}
+                  type="button"
+                  onClick={() => toggleEveningPick(r.name)}
+                  className={cn(
+                    "w-full flex items-center gap-3 p-3 rounded-xl border text-left transition active:scale-[0.99]",
+                    on
+                      ? "border-[var(--color-accent)] bg-[var(--color-accent-soft)]"
+                      : "border-[var(--color-stroke)] bg-[var(--color-elevated)] opacity-70"
+                  )}
+                >
+                  <span className="text-2xl leading-none">{r.icon}</span>
+                  <span className="flex-1 text-sm font-medium">{r.name}</span>
+                  <span
+                    className={cn(
+                      "h-5 w-5 grid place-items-center rounded-md border transition",
+                      on
+                        ? "bg-[var(--color-accent-strong)] border-[var(--color-accent-strong)] text-white"
+                        : "border-[var(--color-stroke-strong)]"
+                    )}
+                  >
+                    {on && <Check size={14} strokeWidth={3} />}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+          <div className="mt-3 text-center text-xs text-[var(--color-fg-2)]">
+            {eveningPicked.size} of {DEFAULT_EVENING_ROUTINE.length} kept ·
+            personalize item 6 with your actual bedtime
           </div>
         </StepShell>
       ),

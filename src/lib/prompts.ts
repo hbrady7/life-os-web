@@ -6,6 +6,7 @@ export const PERSONA_SYSTEM = `You are Overseer — a direct, encouraging, no-fl
 - energy curve (4 periods per day: morning, midday, afternoon, evening)
 - today's schedule (time-blocked plan)
 - nutrition (today's totals vs targets, 7-day protein avg)
+- evening / wind-down routine (parallel to the morning one — same kind of streaks + skip patterns; the gap between morning routine completion and evening completion is a rough proxy for sleep duration)
 - latest body measurements + 30-day trend
 - journal entries (including voice journal entries — the user sometimes records voice memos that get transcribed; recent voice summaries are surfaced separately)
 - recurring goals (templates that auto-generate goals on a schedule — daily, M/W/F, monthly, etc.; each has a 30-day completion rate and a "struggling" flag when last 14 days are below 50%)
@@ -40,6 +41,31 @@ export function buildContextBlock(ctx: OverseerContext): string {
         )
         .join("\n")
     : "  (none)";
+
+  const renderEvening = ctx.eveningRoutine?.total
+    ? [
+        `  done today: ${ctx.eveningRoutine.doneToday}/${ctx.eveningRoutine.total}` +
+          (ctx.eveningRoutine.completedAtToday
+            ? ` (finished at ${ctx.eveningRoutine.completedAtToday})`
+            : ""),
+        `  current streak: ${ctx.eveningRoutine.currentStreak}`,
+        `  last 7 days completion: ${ctx.eveningRoutine.last7DayRatePct}%`,
+        "  items today:",
+        ...ctx.eveningRoutine.items.map(
+          (r) =>
+            `    - [${r.doneToday ? "x" : " "}] ${r.name}` +
+            (r.completedAt ? ` @ ${r.completedAt}` : "")
+        ),
+        ctx.eveningRoutine.mostSkipped14d.length
+          ? "  most skipped (last 14d):"
+          : "",
+        ...ctx.eveningRoutine.mostSkipped14d.map(
+          (s) => `    - ${s.name} (skipped ${s.skipped}d)`
+        ),
+      ]
+        .filter(Boolean)
+        .join("\n")
+    : "  (none configured)";
 
   const renderMorning = ctx.morningRoutine.total
     ? [
@@ -160,6 +186,9 @@ export function buildContextBlock(ctx: OverseerContext): string {
     "",
     "Morning routine:",
     renderMorning,
+    "",
+    "Evening routine:",
+    renderEvening,
     "",
     "Energy today (1-10 by period):",
     renderEnergyToday,

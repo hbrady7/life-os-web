@@ -380,6 +380,35 @@ export type MorningRoutineSettings = {
   showStreak: boolean;
 };
 
+/* ---------- EVENING ROUTINE ---------- */
+
+export type EveningRoutineEntry = MorningRoutineEntry;
+
+export type EveningRoutineItem = {
+  id: string;
+  name: string;
+  icon: string;
+  order: number;
+  history: Record<DateStr, EveningRoutineEntry>;
+};
+
+export type EveningRoutineSettings = MorningRoutineSettings;
+
+export const DEFAULT_EVENING_ROUTINE: Array<{ name: string; icon: string }> = [
+  { name: "No screens 20 min before bed", icon: "📵" },
+  { name: "Dim the lights", icon: "💡" },
+  { name: "Set tomorrow's top 3", icon: "🎯" },
+  { name: "Read 15 min", icon: "📖" },
+  { name: "Magnesium", icon: "💊" },
+  { name: "Lights out by target time", icon: "🌙" },
+];
+
+export const DEFAULT_EVENING_ROUTINE_SETTINGS: EveningRoutineSettings = {
+  showOnTodayScreen: true,
+  autoCollapseWhenDone: true,
+  showStreak: true,
+};
+
 export type Settings = {
   units: Units;
   accent: AccentColor;
@@ -391,6 +420,8 @@ export type Settings = {
   eveningSummary?: CachedBriefing;
   morningRoutine: MorningRoutineSettings;
   routineSeeded: boolean;
+  eveningRoutine: EveningRoutineSettings;
+  eveningRoutineSeeded: boolean;
   nutrition: NutritionTargets;
   showNutritionOnToday: boolean;
   voiceJournal: VoiceJournalSettings;

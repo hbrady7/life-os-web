@@ -7,6 +7,8 @@ import { shouldGenerateForDate } from "@/lib/recurrence";
 import { uid } from "@/lib/utils";
 import {
   DEFAULT_DAY_TYPES,
+  DEFAULT_EVENING_ROUTINE,
+  DEFAULT_EVENING_ROUTINE_SETTINGS,
   DEFAULT_MORNING_ROUTINE,
   DEFAULT_MORNING_ROUTINE_SETTINGS,
   DEFAULT_VOICE_JOURNAL_SETTINGS,
@@ -18,6 +20,8 @@ import {
   EnergyPeriod,
   ENERGY_PERIODS,
   ENERGY_PERIOD_RANGES,
+  EveningRoutineItem,
+  EveningRoutineSettings,
   Goal,
   Habit,
   HABIT_TEMPLATES,
@@ -63,6 +67,7 @@ type State = {
   wins: Win[];
   struggles: Struggle[];
   routine: MorningRoutineItem[];
+  evening: EveningRoutineItem[];
   blocks: Block[];
   energy: Record<DateStr, EnergyLog>;
   meals: Meal[];
@@ -142,6 +147,15 @@ type Actions = {
   resetRoutineToDefaults: (selectedNames?: string[]) => void;
   setRoutineSettings: (patch: Partial<MorningRoutineSettings>) => void;
 
+  // evening routine (mirrors morning)
+  addEveningItem: (name: string, icon: string) => void;
+  toggleEveningItem: (id: string, date?: DateStr) => void;
+  updateEveningItem: (id: string, patch: Partial<EveningRoutineItem>) => void;
+  removeEveningItem: (id: string) => void;
+  reorderEvening: (orderedIds: string[]) => void;
+  resetEveningToDefaults: (selectedNames?: string[]) => void;
+  setEveningSettings: (patch: Partial<EveningRoutineSettings>) => void;
+
   // time blocking
   addBlock: (b: Omit<Block, "id" | "createdAt">) => void;
   updateBlock: (id: string, patch: Partial<Block>) => void;
@@ -204,6 +218,8 @@ const defaultSettings = (): Settings => ({
   habitTemplates: HABIT_TEMPLATES,
   morningRoutine: { ...DEFAULT_MORNING_ROUTINE_SETTINGS },
   routineSeeded: false,
+  eveningRoutine: { ...DEFAULT_EVENING_ROUTINE_SETTINGS },
+  eveningRoutineSeeded: false,
   nutrition: {
     enabled: false,
     calories: undefined,
@@ -231,6 +247,19 @@ function buildDefaultRoutine(
   }));
 }
 
+function buildDefaultEvening(selected?: string[]): EveningRoutineItem[] {
+  const source = selected
+    ? DEFAULT_EVENING_ROUTINE.filter((d) => selected.includes(d.name))
+    : DEFAULT_EVENING_ROUTINE;
+  return source.map((d, i) => ({
+    id: uid(),
+    name: d.name,
+    icon: d.icon,
+    order: i,
+    history: {},
+  }));
+}
+
 const initialState: State = {
   hydrated: false,
   settings: defaultSettings(),
@@ -244,6 +273,7 @@ const initialState: State = {
   wins: [],
   struggles: [],
   routine: [],
+  evening: [],
   blocks: [],
   energy: {},
   meals: [],
@@ -598,6 +628,67 @@ export const useStore = create<State & Actions>()(
           },
         })),
 
+      addEveningItem: (name, icon) =>
+        set((s) => ({
+          evening: [
+            ...s.evening,
+            {
+              id: uid(),
+              name,
+              icon,
+              order: nextOrder(s.evening),
+              history: {},
+            },
+          ],
+        })),
+      toggleEveningItem: (id, date) =>
+        set((s) => ({
+          evening: s.evening.map((r) => {
+            if (r.id !== id) return r;
+            const key = date ?? todayStr();
+            const next = { ...r.history };
+            const current = next[key];
+            if (current?.completed) {
+              delete next[key];
+            } else {
+              next[key] = {
+                completed: true,
+                completedAt: new Date().toISOString(),
+              };
+            }
+            return { ...r, history: next };
+          }),
+        })),
+      updateEveningItem: (id, patch) =>
+        set((s) => ({
+          evening: s.evening.map((r) => (r.id === id ? { ...r, ...patch } : r)),
+        })),
+      removeEveningItem: (id) =>
+        set((s) => ({ evening: s.evening.filter((r) => r.id !== id) })),
+      reorderEvening: (orderedIds) =>
+        set((s) => {
+          const byId = new Map(s.evening.map((r) => [r.id, r]));
+          const reordered = orderedIds
+            .map((id, i) => {
+              const r = byId.get(id);
+              return r ? { ...r, order: i } : null;
+            })
+            .filter(Boolean) as EveningRoutineItem[];
+          return { evening: reordered };
+        }),
+      resetEveningToDefaults: (selectedNames) =>
+        set((s) => ({
+          evening: buildDefaultEvening(selectedNames),
+          settings: { ...s.settings, eveningRoutineSeeded: true },
+        })),
+      setEveningSettings: (patch) =>
+        set((s) => ({
+          settings: {
+            ...s.settings,
+            eveningRoutine: { ...s.settings.eveningRoutine, ...patch },
+          },
+        })),
+
       addBlock: (b) =>
         set((s) => ({
           blocks: [
@@ -923,6 +1014,7 @@ export const useStore = create<State & Actions>()(
             wins: s.wins,
             struggles: s.struggles,
             routine: s.routine,
+            evening: s.evening,
             blocks: s.blocks,
             energy: s.energy,
             meals: s.meals,
@@ -949,6 +1041,10 @@ export const useStore = create<State & Actions>()(
                 ...DEFAULT_MORNING_ROUTINE_SETTINGS,
                 ...((state.settings as Partial<Settings>)?.morningRoutine ?? {}),
               },
+              eveningRoutine: {
+                ...DEFAULT_EVENING_ROUTINE_SETTINGS,
+                ...((state.settings as Partial<Settings>)?.eveningRoutine ?? {}),
+              },
               nutrition: {
                 ...defaultSettings().nutrition,
                 ...((state.settings as Partial<Settings>)?.nutrition ?? {}),
@@ -968,6 +1064,7 @@ export const useStore = create<State & Actions>()(
             wins: state.wins ?? [],
             struggles: state.struggles ?? [],
             routine: state.routine ?? [],
+            evening: state.evening ?? [],
             blocks: state.blocks ?? [],
             energy: state.energy ?? {},
             meals: state.meals ?? [],
@@ -990,8 +1087,10 @@ export const useStore = create<State & Actions>()(
             ...defaultSettings(),
             hasOnboarded: true,
             routineSeeded: true,
+            eveningRoutineSeeded: true,
           },
           routine: buildDefaultRoutine(),
+          evening: buildDefaultEvening(),
         })),
     }),
     {
@@ -1021,6 +1120,10 @@ export const useStore = create<State & Actions>()(
               ...current.settings.morningRoutine,
               ...((p.settings as Partial<Settings>)?.morningRoutine ?? {}),
             },
+            eveningRoutine: {
+              ...current.settings.eveningRoutine,
+              ...((p.settings as Partial<Settings>)?.eveningRoutine ?? {}),
+            },
             nutrition: {
               ...current.settings.nutrition,
               ...((p.settings as Partial<Settings>)?.nutrition ?? {}),
@@ -1031,6 +1134,7 @@ export const useStore = create<State & Actions>()(
             },
           },
           routine: p.routine ?? current.routine,
+          evening: p.evening ?? current.evening,
           blocks: p.blocks ?? current.blocks,
           energy: p.energy ?? current.energy,
           meals: p.meals ?? current.meals,
@@ -1049,6 +1153,9 @@ export const useStore = create<State & Actions>()(
         // first-run seed (also fires for existing users upgrading)
         if (!state.settings.routineSeeded) {
           state.resetRoutineToDefaults();
+        }
+        if (!state.settings.eveningRoutineSeeded) {
+          state.resetEveningToDefaults();
         }
         // migrate legacy single-value energy into per-period log
         const haveLegacy = Object.values(state.health).some(
