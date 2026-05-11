@@ -176,6 +176,8 @@ export type Meal = {
   protein: number;
   carbs?: number;
   fat?: number;
+  /** Set when this meal originated from a SavedMeal chip tap. */
+  savedMealId?: string;
   createdAt: string;
 };
 
@@ -186,6 +188,8 @@ export type SavedMeal = {
   protein: number;
   carbs?: number;
   fat?: number;
+  /** Number of times this favorite has been logged. Used to sort chips. */
+  useCount: number;
 };
 
 export type NutritionTargets = {

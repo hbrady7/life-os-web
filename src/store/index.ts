@@ -151,7 +151,7 @@ type Actions = {
   updateMeal: (id: string, patch: Partial<Meal>) => void;
   removeMeal: (id: string) => void;
   clearMealsForDay: (date: DateStr) => void;
-  addSavedMeal: (m: Omit<SavedMeal, "id">) => void;
+  addSavedMeal: (m: Omit<SavedMeal, "id" | "useCount">) => void;
   updateSavedMeal: (id: string, patch: Partial<SavedMeal>) => void;
   removeSavedMeal: (id: string) => void;
   logSavedMeal: (savedId: string) => void;
@@ -644,7 +644,10 @@ export const useStore = create<State & Actions>()(
         set((s) => ({ meals: s.meals.filter((m) => m.date !== date) })),
       addSavedMeal: (m) =>
         set((s) => ({
-          savedMeals: [...s.savedMeals, { ...m, id: uid() }],
+          savedMeals: [
+            ...s.savedMeals,
+            { ...m, id: uid(), useCount: 0 },
+          ],
         })),
       updateSavedMeal: (id, patch) =>
         set((s) => ({
@@ -675,9 +678,15 @@ export const useStore = create<State & Actions>()(
                 protein: sm.protein,
                 carbs: sm.carbs,
                 fat: sm.fat,
+                savedMealId: sm.id,
                 createdAt: now.toISOString(),
               },
             ],
+            savedMeals: s.savedMeals.map((x) =>
+              x.id === sm.id
+                ? { ...x, useCount: (x.useCount ?? 0) + 1 }
+                : x
+            ),
           };
         }),
       setNutritionTargets: (patch) =>

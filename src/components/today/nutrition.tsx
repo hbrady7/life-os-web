@@ -12,7 +12,7 @@ import { useStore } from "@/store";
 import {
   computeTotalsForDay,
   useMealsForDay,
-  useSavedMealsRaw,
+  useTopSavedMeals,
 } from "@/store/selectors";
 import { Meal, NutritionTargets, SavedMeal } from "@/lib/types";
 import { todayStr } from "@/lib/date";
@@ -24,7 +24,8 @@ export function Nutrition() {
   const showOnToday = useStore((s) => s.settings.showNutritionOnToday);
   const targets = useStore((s) => s.settings.nutrition);
   const meals = useMealsForDay(today);
-  const saved = useSavedMealsRaw();
+  // surface most-used favorites first; tap-count bumps automatically
+  const saved = useTopSavedMeals(20);
   const addMeal = useStore((s) => s.addMeal);
   const updateMeal = useStore((s) => s.updateMeal);
   const removeMeal = useStore((s) => s.removeMeal);

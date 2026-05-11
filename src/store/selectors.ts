@@ -292,6 +292,16 @@ export function useMealsForDay(date: DateStr): Meal[] {
   );
 }
 
+export function useTopSavedMeals(n: number): SavedMeal[] {
+  return useStore(
+    useShallow((s) =>
+      [...s.savedMeals]
+        .sort((a, b) => (b.useCount ?? 0) - (a.useCount ?? 0))
+        .slice(0, n)
+    )
+  );
+}
+
 export function computeTotalsForDay(meals: Meal[]) {
   return meals.reduce(
     (acc, m) => ({
