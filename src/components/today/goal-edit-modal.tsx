@@ -5,7 +5,8 @@ import { Modal } from "@/components/ui/modal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Segmented } from "@/components/ui/segmented";
-import { Goal, Priority } from "@/lib/types";
+import { Goal, Priority, LIFE_GOAL_CATEGORIES } from "@/lib/types";
+import { useActiveLifeGoals } from "@/store/selectors";
 
 const EMOJI_SET = [
   "💪",
@@ -38,6 +39,8 @@ export function GoalEditModal({ goal, onClose, onSave, onDelete }: Props) {
   const [emoji, setEmoji] = React.useState<string | undefined>();
   const [category, setCategory] = React.useState("");
   const [time, setTime] = React.useState("");
+  const [lifeGoalId, setLifeGoalId] = React.useState<string>("");
+  const activeLifeGoals = useActiveLifeGoals();
 
   React.useEffect(() => {
     if (!goal) return;
@@ -48,6 +51,7 @@ export function GoalEditModal({ goal, onClose, onSave, onDelete }: Props) {
     setTime(
       goal.timeEstimateMin != null ? String(goal.timeEstimateMin) : ""
     );
+    setLifeGoalId(goal.lifeGoalId ?? "");
   }, [goal]);
 
   const save = () => {
@@ -57,6 +61,7 @@ export function GoalEditModal({ goal, onClose, onSave, onDelete }: Props) {
       emoji: emoji ?? undefined,
       category: category.trim() || undefined,
       timeEstimateMin: time ? parseInt(time, 10) || undefined : undefined,
+      lifeGoalId: lifeGoalId || undefined,
     });
   };
 
@@ -186,6 +191,29 @@ export function GoalEditModal({ goal, onClose, onSave, onDelete }: Props) {
             />
           </div>
         </div>
+
+        {activeLifeGoals.length > 0 && (
+          <div>
+            <div className="label mb-2">Linked life goal</div>
+            <select
+              value={lifeGoalId}
+              onChange={(e) => setLifeGoalId(e.target.value)}
+              className="control no-zoom h-11 w-full px-3 outline-none accent-ring"
+            >
+              <option value="">— none —</option>
+              {activeLifeGoals.map((g) => {
+                const cat = LIFE_GOAL_CATEGORIES.find(
+                  (c) => c.key === g.category
+                );
+                return (
+                  <option key={g.id} value={g.id}>
+                    {g.emoji || cat?.emoji} {g.title}
+                  </option>
+                );
+              })}
+            </select>
+          </div>
+        )}
       </div>
     </Modal>
   );
