@@ -237,7 +237,7 @@ export type PhotoMeta = {
 };
 
 
-export type JournalSource = "manual" | "reflection" | "overseer";
+export type JournalSource = "manual" | "reflection" | "overseer" | "voice";
 
 export type JournalEntry = {
   id: string;
@@ -248,6 +248,24 @@ export type JournalEntry = {
   tags: string[];
   source: JournalSource;
   createdAt: string;
+  /** Voice entries: 1-3 sentence AI summary. */
+  summary?: string;
+  /** Voice entries: dominant emotion word (e.g. "energetic", "anxious"). */
+  moodWord?: string;
+  /** Voice entries: key into the IndexedDB audio blob store. */
+  audioId?: string;
+};
+
+export type VoiceJournalSettings = {
+  saveRecordings: boolean;
+  autoCheckTodos: boolean;
+  autoLogMood: boolean;
+};
+
+export const DEFAULT_VOICE_JOURNAL_SETTINGS: VoiceJournalSettings = {
+  saveRecordings: false,
+  autoCheckTodos: true,
+  autoLogMood: true,
 };
 
 export type Day = {
@@ -311,6 +329,7 @@ export type Settings = {
   routineSeeded: boolean;
   nutrition: NutritionTargets;
   showNutritionOnToday: boolean;
+  voiceJournal: VoiceJournalSettings;
 };
 
 export const DEFAULT_MORNING_ROUTINE: Array<{ name: string; icon: string }> = [

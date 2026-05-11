@@ -8,6 +8,7 @@ import {
   DEFAULT_DAY_TYPES,
   DEFAULT_MORNING_ROUTINE,
   DEFAULT_MORNING_ROUTINE_SETTINGS,
+  DEFAULT_VOICE_JOURNAL_SETTINGS,
   Block,
   BlockType,
   BodyMeasurement,
@@ -31,6 +32,7 @@ import {
   Plan,
   SavedMeal,
   Settings,
+  VoiceJournalSettings,
   Struggle,
   Win,
   Workout,
@@ -157,6 +159,7 @@ type Actions = {
   logSavedMeal: (savedId: string) => void;
   setNutritionTargets: (patch: Partial<NutritionTargets>) => void;
   setShowNutritionOnToday: (v: boolean) => void;
+  setVoiceJournalSettings: (patch: Partial<VoiceJournalSettings>) => void;
 
   // body measurements + photos
   addBodyMeasurement: (m: Omit<BodyMeasurement, "id" | "createdAt">) => void;
@@ -188,6 +191,7 @@ const defaultSettings = (): Settings => ({
     fat: undefined,
   },
   showNutritionOnToday: true,
+  voiceJournal: { ...DEFAULT_VOICE_JOURNAL_SETTINGS },
 });
 
 function buildDefaultRoutine(
@@ -700,6 +704,13 @@ export const useStore = create<State & Actions>()(
         set((s) => ({
           settings: { ...s.settings, showNutritionOnToday: v },
         })),
+      setVoiceJournalSettings: (patch) =>
+        set((s) => ({
+          settings: {
+            ...s.settings,
+            voiceJournal: { ...s.settings.voiceJournal, ...patch },
+          },
+        })),
 
       addBodyMeasurement: (m) =>
         set((s) => {
@@ -794,6 +805,10 @@ export const useStore = create<State & Actions>()(
                 ...defaultSettings().nutrition,
                 ...((state.settings as Partial<Settings>)?.nutrition ?? {}),
               },
+              voiceJournal: {
+                ...DEFAULT_VOICE_JOURNAL_SETTINGS,
+                ...((state.settings as Partial<Settings>)?.voiceJournal ?? {}),
+              },
             },
             days: state.days ?? {},
             goals: state.goals ?? [],
@@ -859,6 +874,10 @@ export const useStore = create<State & Actions>()(
             nutrition: {
               ...current.settings.nutrition,
               ...((p.settings as Partial<Settings>)?.nutrition ?? {}),
+            },
+            voiceJournal: {
+              ...current.settings.voiceJournal,
+              ...((p.settings as Partial<Settings>)?.voiceJournal ?? {}),
             },
           },
           routine: p.routine ?? current.routine,

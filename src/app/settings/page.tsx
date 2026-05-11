@@ -236,6 +236,8 @@ export default function SettingsPage() {
 
       <NutritionSettingsCard />
 
+      <VoiceJournalSettingsCard />
+
       <Card>
         <CardHeader>
           <CardTitle>Backup</CardTitle>
@@ -392,6 +394,97 @@ function NutritionSettingsCard() {
           </div>
         ))}
       </div>
+    </Card>
+  );
+}
+
+function VoiceJournalSettingsCard() {
+  const vj = useStore((s) => s.settings.voiceJournal);
+  const setVoiceJournalSettings = useStore((s) => s.setVoiceJournalSettings);
+  const [confirmClear, setConfirmClear] = React.useState(false);
+  const [status, setStatus] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    if (!status) return;
+    const t = window.setTimeout(() => setStatus(null), 2400);
+    return () => window.clearTimeout(t);
+  }, [status]);
+
+  const onClearAll = async () => {
+    setConfirmClear(false);
+    try {
+      const { clearAllAudio } = await import("@/lib/audio-store");
+      await clearAllAudio();
+      setStatus("Cleared.");
+      haptic("success");
+    } catch {
+      setStatus("Couldn't clear.");
+    }
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Voice Journal</CardTitle>
+        {status && (
+          <span className="text-xs text-[var(--color-success)]">{status}</span>
+        )}
+      </CardHeader>
+      <div className="space-y-1">
+        <ToggleRow
+          label="Save audio recordings"
+          description="Store the original audio on this device. Uses more storage."
+          checked={vj.saveRecordings}
+          onChange={(v) => setVoiceJournalSettings({ saveRecordings: v })}
+        />
+        <ToggleRow
+          label="Auto-check extracted to-dos"
+          description="Pre-select all extracted to-dos in the Review screen."
+          checked={vj.autoCheckTodos}
+          onChange={(v) => setVoiceJournalSettings({ autoCheckTodos: v })}
+        />
+        <ToggleRow
+          label="Auto-log mood from voice entries"
+          description="Write the estimated mood score to today's mood log."
+          checked={vj.autoLogMood}
+          onChange={(v) => setVoiceJournalSettings({ autoLogMood: v })}
+        />
+      </div>
+      <Button
+        variant="secondary"
+        className="w-full mt-3"
+        onClick={() => setConfirmClear(true)}
+      >
+        <Trash2 size={14} />
+        Clear all saved audio
+      </Button>
+      <p className="mt-3 text-[11px] text-[var(--color-fg-3)] leading-relaxed">
+        Recordings are sent to Google’s Gemini API for transcription. On the
+        free tier, Google may use your data to improve their models. Avoid
+        recording sensitive information.
+      </p>
+
+      <Modal
+        open={confirmClear}
+        onClose={() => setConfirmClear(false)}
+        title="Clear all saved audio?"
+        description="Removes every voice recording stored on this device. Journal entries are kept."
+        footer={
+          <div className="flex items-center justify-end gap-2">
+            <Button variant="ghost" onClick={() => setConfirmClear(false)}>
+              Cancel
+            </Button>
+            <Button variant="danger" onClick={onClearAll}>
+              <Trash2 size={14} />
+              Clear
+            </Button>
+          </div>
+        }
+      >
+        <div className="text-sm text-[var(--color-fg-2)]">
+          This cannot be undone.
+        </div>
+      </Modal>
     </Card>
   );
 }

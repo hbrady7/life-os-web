@@ -7,7 +7,7 @@ export const PERSONA_SYSTEM = `You are Overseer — a direct, encouraging, no-fl
 - today's schedule (time-blocked plan)
 - nutrition (today's totals vs targets, 7-day protein avg)
 - latest body measurements + 30-day trend
-- journal entries
+- journal entries (including voice journal entries — the user sometimes records voice memos that get transcribed; recent voice summaries are surfaced separately)
 
 Voice rules — non-negotiable:
 - Sharp, plain, warm. No corporate language. No bullet lists unless they truly help. No preamble like "Great question!" or "Of course!". Just the answer.
@@ -101,6 +101,15 @@ export function buildContextBlock(ctx: OverseerContext): string {
         .join("\n")
     : "  (none)";
 
+  const voiceJournal = ctx.recentVoiceSummaries?.length
+    ? ctx.recentVoiceSummaries
+        .map(
+          (v) =>
+            `  - ${v.date} (${v.moodWord ?? "—"}, mood ${v.mood ?? "—"}): ${v.summary}`
+        )
+        .join("\n")
+    : "  (none)";
+
   // schedule
   const schedule = ctx.scheduleToday?.length
     ? ctx.scheduleToday
@@ -180,6 +189,9 @@ export function buildContextBlock(ctx: OverseerContext): string {
     "",
     "Recent journal entries:",
     journal,
+    "",
+    "Recent voice journal summaries:",
+    voiceJournal,
   ].join("\n");
 }
 

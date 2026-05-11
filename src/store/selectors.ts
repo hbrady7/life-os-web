@@ -526,6 +526,15 @@ export function getOverseerContext() {
       snippet: j.text.slice(0, 200),
       mood: j.mood,
     })),
+    recentVoiceSummaries: s.journal
+      .filter((j) => j.source === "voice")
+      .slice(0, 3)
+      .map((j) => ({
+        date: j.date,
+        summary: (j.summary ?? j.text).slice(0, 240),
+        mood: j.mood,
+        moodWord: j.moodWord,
+      })),
     scheduleToday: [...s.blocks]
       .filter((b) => b.date === today)
       .sort((a, b) => a.startMin - b.startMin)

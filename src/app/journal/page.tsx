@@ -1,7 +1,15 @@
 "use client";
 
 import * as React from "react";
-import { Plus, Search, Sparkles, Trash2 } from "lucide-react";
+import {
+  ChevronDown,
+  Mic,
+  Play,
+  Plus,
+  Search,
+  Sparkles,
+  Trash2,
+} from "lucide-react";
 import { Screen } from "@/components/screen";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -12,11 +20,14 @@ import { Pill } from "@/components/ui/pill";
 import { Slider } from "@/components/ui/slider";
 import { Segmented } from "@/components/ui/segmented";
 import { Markdown } from "@/components/journal/markdown";
+import { VoiceJournalModal } from "@/components/journal/voice-journal-modal";
 import { useStore } from "@/store";
 import { useJournal } from "@/store/selectors";
 import { JournalEntry } from "@/lib/types";
 import { format, fromDateStr, formatRelative, todayStr } from "@/lib/date";
 import { haptic } from "@/lib/haptics";
+import { getAudio } from "@/lib/audio-store";
+import { cn } from "@/lib/utils";
 
 export default function JournalPage() {
   const entries = useJournal();
@@ -26,6 +37,16 @@ export default function JournalPage() {
   const [moodMax, setMoodMax] = React.useState(10);
   const [activeTag, setActiveTag] = React.useState<string | null>(null);
   const [newOpen, setNewOpen] = React.useState(false);
+  const [voiceOpen, setVoiceOpen] = React.useState(false);
+  const [voiceSupported, setVoiceSupported] = React.useState(true);
+
+  React.useEffect(() => {
+    if (typeof window === "undefined") return;
+    const ok =
+      typeof window.MediaRecorder !== "undefined" &&
+      !!navigator.mediaDevices?.getUserMedia;
+    setVoiceSupported(ok);
+  }, []);
 
   const allTags = React.useMemo(() => {
     const set = new Set<string>();
@@ -40,8 +61,13 @@ export default function JournalPage() {
       (e.mood < moodMin || e.mood > moodMax)
     )
       return false;
-    if (query.trim() && !e.text.toLowerCase().includes(query.toLowerCase()))
-      return false;
+    const q = query.trim().toLowerCase();
+    if (q) {
+      const haystack = [e.text, e.summary ?? "", e.tags.join(" ")]
+        .join(" ")
+        .toLowerCase();
+      if (!haystack.includes(q)) return false;
+    }
     return true;
   });
 
@@ -60,7 +86,30 @@ export default function JournalPage() {
             className="pl-9"
           />
         </div>
-        <Button onClick={() => setNewOpen(true)} size="default">
+        {voiceSupported && (
+          <Button
+            onClick={() => {
+              haptic("tap");
+              setVoiceOpen(true);
+            }}
+            size="default"
+            title="Voice entry"
+            aria-label="Voice entry"
+          >
+            <Mic size={14} />
+            Voice
+          </Button>
+        )}
+        <Button
+          onClick={() => setNewOpen(true)}
+          size="default"
+          variant={voiceSupported ? "secondary" : "primary"}
+          title={
+            voiceSupported
+              ? "New entry"
+              : "Voice not supported on this browser — text only"
+          }
+        >
           <Plus size={14} />
           New
         </Button>
@@ -131,6 +180,11 @@ export default function JournalPage() {
       )}
 
       <NewEntryModal open={newOpen} onClose={() => setNewOpen(false)} />
+      <VoiceJournalModal
+        open={voiceOpen}
+        onClose={() => setVoiceOpen(false)}
+        onSaved={() => haptic("success")}
+      />
     </Screen>
   );
 }
@@ -142,10 +196,22 @@ function EntryCard({
   entry: JournalEntry;
   onDelete: () => void;
 }) {
+  const [expanded, setExpanded] = React.useState(false);
+  const isVoice = entry.source === "voice";
+  const wordCount = entry.text.split(/\s+/).filter(Boolean).length;
+  const longText = wordCount > 80;
+  const showTranscriptCollapsed = isVoice && longText && !expanded;
+
   return (
     <Card className="group">
       <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 min-w-0">
+          {isVoice && (
+            <Pill tone="accent" className="h-6 px-2">
+              <Mic size={10} />
+              Voice
+            </Pill>
+          )}
           {entry.source === "reflection" && (
             <Pill tone="accent" className="h-6 px-2">
               <Sparkles size={10} />
@@ -160,6 +226,11 @@ function EntryCard({
           </div>
         </div>
         <div className="flex items-center gap-1.5">
+          {entry.moodWord && (
+            <Pill tone="neutral" className="h-6 px-2 text-[10px] capitalize">
+              {entry.moodWord}
+            </Pill>
+          )}
           {entry.mood != null && (
             <Pill tone="neutral" className="h-6 px-2 text-[10px]">
               mood {entry.mood}
@@ -180,7 +251,59 @@ function EntryCard({
           </button>
         </div>
       </div>
-      <Markdown text={entry.text} />
+
+      {isVoice && entry.summary ? (
+        <>
+          <div className="text-sm text-[var(--color-fg)] mb-2 leading-relaxed">
+            {entry.summary}
+          </div>
+          <button
+            type="button"
+            onClick={() => setExpanded((v) => !v)}
+            className="inline-flex items-center gap-1 text-[11px] text-[var(--color-accent)] mb-2"
+          >
+            <ChevronDown
+              size={12}
+              className={cn("transition-transform", expanded ? "rotate-180" : "")}
+            />
+            {expanded ? "Hide transcript" : "Show transcript"}
+          </button>
+          {expanded && (
+            <div className="text-sm text-[var(--color-fg-2)] whitespace-pre-wrap leading-relaxed border-l-2 border-[var(--color-stroke)] pl-3 mt-1">
+              {entry.text}
+            </div>
+          )}
+        </>
+      ) : isVoice ? (
+        <>
+          <div className="text-sm text-[var(--color-fg)] whitespace-pre-wrap leading-relaxed">
+            {showTranscriptCollapsed
+              ? entry.text.split(/\s+/).slice(0, 80).join(" ") + "…"
+              : entry.text}
+          </div>
+          {longText && (
+            <button
+              type="button"
+              onClick={() => setExpanded((v) => !v)}
+              className="mt-2 inline-flex items-center gap-1 text-[11px] text-[var(--color-accent)]"
+            >
+              <ChevronDown
+                size={12}
+                className={cn(
+                  "transition-transform",
+                  expanded ? "rotate-180" : ""
+                )}
+              />
+              {expanded ? "Show less" : "Show more"}
+            </button>
+          )}
+        </>
+      ) : (
+        <Markdown text={entry.text} />
+      )}
+
+      {isVoice && entry.audioId && <VoicePlayback audioId={entry.audioId} />}
+
       {entry.tags.length > 0 && (
         <div className="flex flex-wrap gap-1 mt-3">
           {entry.tags.map((t) => (
@@ -194,6 +317,63 @@ function EntryCard({
         </div>
       )}
     </Card>
+  );
+}
+
+function VoicePlayback({ audioId }: { audioId: string }) {
+  const [url, setUrl] = React.useState<string | null>(null);
+  const [missing, setMissing] = React.useState(false);
+  const [loading, setLoading] = React.useState(false);
+
+  const load = async () => {
+    if (url || loading) return;
+    setLoading(true);
+    try {
+      const blob = await getAudio(audioId);
+      if (!blob) {
+        setMissing(true);
+        return;
+      }
+      setUrl(URL.createObjectURL(blob));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  React.useEffect(() => {
+    return () => {
+      if (url) URL.revokeObjectURL(url);
+    };
+  }, [url]);
+
+  if (missing) {
+    return (
+      <div className="mt-3 text-[11px] text-[var(--color-fg-3)] italic">
+        Audio not found on this device.
+      </div>
+    );
+  }
+
+  if (!url) {
+    return (
+      <button
+        type="button"
+        onClick={load}
+        className="mt-3 inline-flex items-center gap-1.5 h-8 px-3 rounded-full bg-[var(--color-elevated)] border border-[var(--color-stroke)] text-xs text-[var(--color-fg-2)] hover:text-[var(--color-fg)]"
+      >
+        <Play size={12} />
+        {loading ? "Loading…" : "Play audio"}
+      </button>
+    );
+  }
+
+  return (
+    <audio
+      src={url}
+      controls
+      className="mt-3 w-full h-9"
+      preload="metadata"
+    />
   );
 }
 
