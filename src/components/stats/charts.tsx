@@ -21,9 +21,9 @@ import {
 import { format, fromDateStr, lastNDates } from "@/lib/date";
 import { useStore } from "@/store";
 import {
-  useLastNHealth,
-  useLastNWorkouts,
   useHabits,
+  useHealthMap,
+  useWorkoutsRaw,
 } from "@/store/selectors";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { round1 } from "@/lib/utils";
@@ -50,11 +50,16 @@ function TooltipBox({ active, payload, label }: any) {
 }
 
 export function MoodEnergyChart({ days }: { days: number }) {
-  const data = useLastNHealth(days).map((d) => ({
-    date: format(fromDateStr(d.date), "M/d"),
-    mood: d.log?.mood ?? null,
-    energy: d.log?.energy ?? null,
-  }));
+  const health = useHealthMap();
+  const data = React.useMemo(
+    () =>
+      lastNDates(days).map((date) => ({
+        date: format(fromDateStr(date), "M/d"),
+        mood: health[date]?.mood ?? null,
+        energy: health[date]?.energy ?? null,
+      })),
+    [days, health]
+  );
 
   return (
     <Card>
@@ -95,17 +100,24 @@ export function MoodEnergyChart({ days }: { days: number }) {
 }
 
 export function SleepChart({ days }: { days: number }) {
-  const series = useLastNHealth(days).map((d) => ({
-    date: format(fromDateStr(d.date), "M/d"),
-    hours: d.log?.sleepHours ?? null,
-  }));
-  const valid = series.filter((s) => s.hours != null) as Array<{
-    date: string;
-    hours: number;
-  }>;
-  const avg = valid.length
-    ? round1(valid.reduce((acc, x) => acc + x.hours, 0) / valid.length)
-    : null;
+  const health = useHealthMap();
+  const series = React.useMemo(
+    () =>
+      lastNDates(days).map((date) => ({
+        date: format(fromDateStr(date), "M/d"),
+        hours: health[date]?.sleepHours ?? null,
+      })),
+    [days, health]
+  );
+  const avg = React.useMemo(() => {
+    const valid = series.filter((s) => s.hours != null) as Array<{
+      date: string;
+      hours: number;
+    }>;
+    return valid.length
+      ? round1(valid.reduce((acc, x) => acc + x.hours, 0) / valid.length)
+      : null;
+  }, [series]);
 
   return (
     <Card>
@@ -146,24 +158,26 @@ export function SleepChart({ days }: { days: number }) {
 
 export function WeightChart({ days }: { days: number }) {
   const unit = useStore((s) => s.settings.units.weight);
-  const conv = (lb: number) => (unit === "kg" ? lb * 0.453592 : lb);
+  const health = useHealthMap();
 
-  const series = useLastNHealth(days).map((d) => ({
-    date: format(fromDateStr(d.date), "M/d"),
-    weight: d.log?.weight != null ? round1(conv(d.log.weight)) : null,
-  }));
-
-  // 7-day moving avg
-  const ma = series.map((_, i) => {
-    const slice = series
-      .slice(Math.max(0, i - 6), i + 1)
-      .map((x) => x.weight)
-      .filter((x): x is number => x != null);
-    return slice.length
-      ? round1(slice.reduce((a, b) => a + b, 0) / slice.length)
-      : null;
-  });
-  const merged = series.map((s, i) => ({ ...s, ma: ma[i] }));
+  const merged = React.useMemo(() => {
+    const conv = (lb: number) => (unit === "kg" ? lb * 0.453592 : lb);
+    const series = lastNDates(days).map((date) => ({
+      date: format(fromDateStr(date), "M/d"),
+      weight:
+        health[date]?.weight != null ? round1(conv(health[date]!.weight!)) : null,
+    }));
+    const ma = series.map((_, i) => {
+      const slice = series
+        .slice(Math.max(0, i - 6), i + 1)
+        .map((x) => x.weight)
+        .filter((x): x is number => x != null);
+      return slice.length
+        ? round1(slice.reduce((a, b) => a + b, 0) / slice.length)
+        : null;
+    });
+    return series.map((s, i) => ({ ...s, ma: ma[i] }));
+  }, [days, health, unit]);
 
   return (
     <Card>
@@ -212,22 +226,24 @@ const WORKOUT_COLORS: Record<string, string> = {
 };
 
 export function WorkoutsDonut({ days }: { days: number }) {
-  const list = useLastNWorkouts(days);
-  const grouped: Record<string, number> = {};
-  for (const w of list) {
-    grouped[w.type] = (grouped[w.type] ?? 0) + 1;
-  }
-  const data = Object.entries(grouped).map(([type, count]) => ({
-    type,
-    count,
-  }));
+  const workouts = useWorkoutsRaw();
+  const data = React.useMemo(() => {
+    const dates = new Set(lastNDates(days));
+    const list = workouts.filter((w) => dates.has(w.date));
+    const grouped: Record<string, number> = {};
+    for (const w of list) {
+      grouped[w.type] = (grouped[w.type] ?? 0) + 1;
+    }
+    return Object.entries(grouped).map(([type, count]) => ({ type, count }));
+  }, [days, workouts]);
+  const total = data.reduce((a, b) => a + b.count, 0);
 
   return (
     <Card>
       <CardHeader>
         <CardTitle>Workouts</CardTitle>
         <span className="text-xs text-[var(--color-fg-2)] tnum">
-          {list.length} total
+          {total} total
         </span>
       </CardHeader>
       <div className="h-44">
@@ -270,14 +286,16 @@ export function WorkoutsDonut({ days }: { days: number }) {
 
 export function HabitRatesBars({ days }: { days: number }) {
   const habits = useHabits();
-  const dates = lastNDates(days);
-  const data = habits.map((h) => {
-    const done = dates.filter((d) => h.history[d]).length;
-    return {
-      name: h.name,
-      pct: Math.round((done / dates.length) * 100),
-    };
-  });
+  const data = React.useMemo(() => {
+    const dates = lastNDates(days);
+    return habits.map((h) => {
+      const done = dates.filter((d) => h.history[d]).length;
+      return {
+        name: h.name,
+        pct: Math.round((done / dates.length) * 100),
+      };
+    });
+  }, [days, habits]);
 
   return (
     <Card>

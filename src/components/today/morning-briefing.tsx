@@ -4,7 +4,7 @@ import * as React from "react";
 import { motion } from "motion/react";
 import { Sun, ChevronDown, X } from "lucide-react";
 import { useStore } from "@/store";
-import { useOverseerContext } from "@/store/selectors";
+import { getOverseerContext } from "@/store/selectors";
 import { todayStr, isPast5am } from "@/lib/date";
 import { cn } from "@/lib/utils";
 
@@ -12,7 +12,6 @@ export function MorningBriefing() {
   const today = todayStr();
   const cached = useStore((s) => s.settings.morningBriefing);
   const setBriefing = useStore((s) => s.setMorningBriefing);
-  const context = useOverseerContext();
   const [expanded, setExpanded] = React.useState(true);
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
@@ -28,7 +27,7 @@ export function MorningBriefing() {
     fetch("/api/overseer/briefing", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ context }),
+      body: JSON.stringify({ context: getOverseerContext() }),
     })
       .then(async (res) => {
         if (aborted) return;
@@ -70,39 +69,38 @@ export function MorningBriefing() {
       animate={{ opacity: 1, y: 0 }}
       className="card p-0 overflow-hidden border-[color:color-mix(in_srgb,var(--color-accent)_22%,transparent)]"
     >
-      <button
-        type="button"
-        onClick={() => setExpanded((v) => !v)}
-        className="w-full flex items-center gap-3 p-4 text-left"
-      >
-        <div className="h-9 w-9 grid place-items-center rounded-xl grad-hero text-white">
-          <Sun size={16} />
-        </div>
-        <div className="flex-1 min-w-0">
-          <div className="label text-[10px]">Morning briefing</div>
-          <div className="text-sm font-semibold tracking-tight">
-            {loading ? "Pulling together your day…" : "Today, in one breath"}
-          </div>
-        </div>
+      <div className="flex items-stretch p-4 gap-3">
         <button
           type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            setDismissed(true);
-          }}
+          onClick={() => setExpanded((v) => !v)}
+          className="flex-1 flex items-center gap-3 text-left"
+        >
+          <div className="h-9 w-9 grid place-items-center rounded-xl grad-hero text-white">
+            <Sun size={16} />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="label text-[10px]">Morning briefing</div>
+            <div className="text-sm font-semibold tracking-tight">
+              {loading ? "Pulling together your day…" : "Today, in one breath"}
+            </div>
+          </div>
+          <ChevronDown
+            size={16}
+            className={cn(
+              "text-[var(--color-fg-3)] transition-transform",
+              expanded ? "" : "-rotate-90"
+            )}
+          />
+        </button>
+        <button
+          type="button"
+          onClick={() => setDismissed(true)}
           aria-label="Dismiss"
-          className="h-7 w-7 grid place-items-center rounded-full text-[var(--color-fg-3)] hover:text-[var(--color-fg-2)] hover:bg-[var(--color-elevated)]"
+          className="h-7 w-7 grid place-items-center rounded-full text-[var(--color-fg-3)] hover:text-[var(--color-fg-2)] hover:bg-[var(--color-elevated)] self-center"
         >
           <X size={14} />
         </button>
-        <ChevronDown
-          size={16}
-          className={cn(
-            "text-[var(--color-fg-3)] transition-transform",
-            expanded ? "" : "-rotate-90"
-          )}
-        />
-      </button>
+      </div>
       {expanded && (
         <div className="px-4 pb-4 -mt-2">
           {loading && !text && (

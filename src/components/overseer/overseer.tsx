@@ -3,7 +3,7 @@
 import * as React from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { Send, Sparkles, X, ExternalLink } from "lucide-react";
-import { useOverseerContext } from "@/store/selectors";
+import { getOverseerContext } from "@/store/selectors";
 import { uid } from "@/lib/utils";
 import { haptic } from "@/lib/haptics";
 import { OverseerProvider } from "./overseer-context";
@@ -30,7 +30,6 @@ export function Overseer() {
   const [error, setError] = React.useState<null | { kind: "no-key" | "other"; msg: string }>(null);
   const abortRef = React.useRef<AbortController | null>(null);
   const scrollerRef = React.useRef<HTMLDivElement>(null);
-  const context = useOverseerContext();
 
   const openPanel = React.useCallback((prefill?: string) => {
     setOpen(true);
@@ -90,7 +89,7 @@ export function Overseer() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           messages: newMessages.map(({ role, content }) => ({ role, content })),
-          context,
+          context: getOverseerContext(),
         }),
         signal: controller.signal,
       });

@@ -3,14 +3,13 @@
 import * as React from "react";
 import { Flame, Sunrise } from "lucide-react";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
-import { useStore } from "@/store";
 import {
-  useRoutine,
+  computePerItemRate,
   useRoutineLongestStreak,
   useRoutineStreak,
   useRoutineCompletionRate,
   useRoutineAvgCompletionMin,
-  useRoutinePerItemRate,
+  useRoutineRaw,
 } from "@/store/selectors";
 import { lastNDates, format, fromDateStr } from "@/lib/date";
 import { cn } from "@/lib/utils";
@@ -40,21 +39,29 @@ function formatTime(mins: number) {
 }
 
 export function MorningRoutineStatsCard({ days }: { days: number }) {
-  const routine = useRoutine();
+  const routineRaw = useRoutineRaw();
   const streak = useRoutineStreak();
   const longest = useRoutineLongestStreak();
   const rate = useRoutineCompletionRate(days);
   const avgMin = useRoutineAvgCompletionMin(days);
-  const perItem = useRoutinePerItemRate(days);
-  const history = useStore((s) => s.routine);
+  const perItem = React.useMemo(
+    () => computePerItemRate(routineRaw, days),
+    [routineRaw, days]
+  );
 
   const heatmapDays = Math.min(days, 30);
   const dates = React.useMemo(() => lastNDates(heatmapDays), [heatmapDays]);
-  const dayPcts = dates.map((d) => {
-    if (!routine.length) return 0;
-    const done = history.filter((r) => r.history[d]?.completed).length;
-    return done / history.length;
-  });
+  const dayPcts = React.useMemo(
+    () =>
+      dates.map((d) => {
+        if (!routineRaw.length) return 0;
+        const done = routineRaw.filter(
+          (r) => r.history[d]?.completed
+        ).length;
+        return done / routineRaw.length;
+      }),
+    [dates, routineRaw]
+  );
 
   return (
     <Card>
@@ -65,7 +72,7 @@ export function MorningRoutineStatsCard({ days }: { days: number }) {
         </span>
       </CardHeader>
 
-      {routine.length === 0 ? (
+      {routineRaw.length === 0 ? (
         <div className="text-xs text-[var(--color-fg-3)] text-center py-6">
           Set up your routine in Today to see stats.
         </div>

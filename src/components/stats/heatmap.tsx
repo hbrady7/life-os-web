@@ -1,10 +1,15 @@
 "use client";
 
 import * as React from "react";
-import { useLastNDayScores } from "@/store/selectors";
-import { format, fromDateStr } from "@/lib/date";
-
-type Cell = { date: string; score: number };
+import {
+  useGoalsRaw,
+  useHabitsRaw,
+  useHealthMap,
+  useJournalRaw,
+  useRoutineRaw,
+} from "@/store/selectors";
+import { lastNDates, format, fromDateStr } from "@/lib/date";
+import { dayScore } from "@/lib/score";
 
 function bin(s: number) {
   if (s <= 0) return 0;
@@ -23,7 +28,26 @@ const BIN_BG = [
 ];
 
 export function Heatmap({ days = 30 }: { days?: number }) {
-  const data = useLastNDayScores(days);
+  const goals = useGoalsRaw();
+  const habits = useHabitsRaw();
+  const routine = useRoutineRaw();
+  const journal = useJournalRaw();
+  const health = useHealthMap();
+
+  const data = React.useMemo(() => {
+    const dates = lastNDates(days);
+    return dates.map((date) => ({
+      date,
+      score: dayScore({
+        goalsForDay: goals.filter((g) => g.date === date),
+        habits,
+        routine,
+        health: health[date],
+        journalsForDay: journal.filter((j) => j.date === date),
+        date,
+      }),
+    }));
+  }, [days, goals, habits, routine, journal, health]);
 
   return (
     <div className="card p-5">
@@ -49,7 +73,7 @@ export function Heatmap({ days = 30 }: { days?: number }) {
           gridTemplateRows: "repeat(7, minmax(0, 1fr))",
         }}
       >
-        {data.map((c: Cell, i) => (
+        {data.map((c) => (
           <div
             key={c.date}
             title={`${format(fromDateStr(c.date), "MMM d")} — ${Math.round(c.score * 100)}%`}

@@ -1,5 +1,6 @@
 "use client";
 
+import { useShallow } from "zustand/react/shallow";
 import { lastNDates, todayStr } from "@/lib/date";
 import {
   dayScore,
@@ -23,23 +24,29 @@ export function useToday(): DateStr {
 
 export function useTodayGoals(): Goal[] {
   const today = todayStr();
-  return useStore((s) =>
-    s.goals
-      .filter((g) => g.date === today)
-      .sort((a, b) => a.order - b.order)
+  return useStore(
+    useShallow((s) =>
+      s.goals
+        .filter((g) => g.date === today)
+        .sort((a, b) => a.order - b.order)
+    )
   );
 }
 
 export function useGoalsByDate(date: DateStr) {
-  return useStore((s) =>
-    s.goals
-      .filter((g) => g.date === date)
-      .sort((a, b) => a.order - b.order)
+  return useStore(
+    useShallow((s) =>
+      s.goals
+        .filter((g) => g.date === date)
+        .sort((a, b) => a.order - b.order)
+    )
   );
 }
 
 export function useHabits(): Habit[] {
-  return useStore((s) => [...s.habits].sort((a, b) => a.order - b.order));
+  return useStore(
+    useShallow((s) => [...s.habits].sort((a, b) => a.order - b.order))
+  );
 }
 
 export function useHabitStreak(id: string) {
@@ -65,32 +72,40 @@ export function useHealth(date: DateStr) {
 
 export function useTodayWorkouts() {
   const today = todayStr();
-  return useStore((s) =>
-    s.workouts
-      .filter((w) => w.date === today)
-      .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
+  return useStore(
+    useShallow((s) =>
+      s.workouts
+        .filter((w) => w.date === today)
+        .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
+    )
   );
 }
 
 export function usePlans(date?: DateStr) {
-  return useStore((s) =>
-    s.plans
-      .filter((p) => (date ? p.date === date : true))
-      .sort((a, b) => a.order - b.order)
+  return useStore(
+    useShallow((s) =>
+      s.plans
+        .filter((p) => (date ? p.date === date : true))
+        .sort((a, b) => a.order - b.order)
+    )
   );
 }
 export function useWins(date?: DateStr) {
-  return useStore((s) =>
-    s.wins
-      .filter((p) => (date ? p.date === date : true))
-      .sort((a, b) => a.order - b.order)
+  return useStore(
+    useShallow((s) =>
+      s.wins
+        .filter((p) => (date ? p.date === date : true))
+        .sort((a, b) => a.order - b.order)
+    )
   );
 }
 export function useStruggles(date?: DateStr) {
-  return useStore((s) =>
-    s.struggles
-      .filter((p) => (date ? p.date === date : true))
-      .sort((a, b) => a.order - b.order)
+  return useStore(
+    useShallow((s) =>
+      s.struggles
+        .filter((p) => (date ? p.date === date : true))
+        .sort((a, b) => a.order - b.order)
+    )
   );
 }
 
@@ -99,7 +114,9 @@ export function useJournal() {
 }
 
 export function useJournalForDate(date: DateStr): JournalEntry[] {
-  return useStore((s) => s.journal.filter((j) => j.date === date));
+  return useStore(
+    useShallow((s) => s.journal.filter((j) => j.date === date))
+  );
 }
 
 export function useScoreFor(date: DateStr): number {
@@ -118,40 +135,29 @@ export function useScoreFor(date: DateStr): number {
   });
 }
 
-export function useLastNDayScores(n: number) {
-  const dates = lastNDates(n);
-  return useStore((s) =>
-    dates.map((date) => {
-      const goalsForDay = s.goals.filter((g) => g.date === date);
-      const journalsForDay = s.journal.filter((j) => j.date === date);
-      const health = s.health[date];
-      return {
-        date,
-        score: dayScore({
-          goalsForDay,
-          habits: s.habits,
-          routine: s.routine,
-          health,
-          journalsForDay,
-          date,
-        }),
-      };
-    })
-  );
+/**
+ * Raw data getters — return the underlying store reference directly so
+ * downstream components can `useMemo` derived arrays against stable inputs.
+ * Recharts in particular loops if its `data` prop is a new array on every
+ * render.
+ */
+export function useHealthMap() {
+  return useStore((s) => s.health);
 }
-
-export function useLastNHealth(n: number) {
-  const dates = lastNDates(n);
-  return useStore((s) =>
-    dates.map((date) => ({ date, log: s.health[date] }))
-  );
+export function useGoalsRaw() {
+  return useStore((s) => s.goals);
 }
-
-export function useLastNWorkouts(n: number) {
-  return useStore((s) => {
-    const dates = new Set(lastNDates(n));
-    return s.workouts.filter((w) => dates.has(w.date));
-  });
+export function useJournalRaw() {
+  return useStore((s) => s.journal);
+}
+export function useWorkoutsRaw() {
+  return useStore((s) => s.workouts);
+}
+export function useHabitsRaw() {
+  return useStore((s) => s.habits);
+}
+export function useRoutineRaw() {
+  return useStore((s) => s.routine);
 }
 
 export function useLastNHabitHistory(habit: Habit, n: number) {
@@ -160,8 +166,8 @@ export function useLastNHabitHistory(habit: Habit, n: number) {
 }
 
 export function useRoutine(): MorningRoutineItem[] {
-  return useStore((s) =>
-    [...s.routine].sort((a, b) => a.order - b.order)
+  return useStore(
+    useShallow((s) => [...s.routine].sort((a, b) => a.order - b.order))
   );
 }
 
@@ -219,129 +225,134 @@ export function useRoutineAvgCompletionMin(days: number): number | null {
   });
 }
 
-export function useRoutinePerItemRate(
+export function computePerItemRate(
+  routine: MorningRoutineItem[],
   days: number
 ): Array<{ id: string; name: string; icon: string; pct: number }> {
-  return useStore((s) => {
-    const dates = lastNDates(days);
-    return [...s.routine]
-      .sort((a, b) => a.order - b.order)
-      .map((r) => {
-        const done = dates.filter((d) => r.history[d]?.completed).length;
-        return {
-          id: r.id,
-          name: r.name,
-          icon: r.icon,
-          pct: Math.round((done / dates.length) * 100),
-        };
-      });
-  });
-}
-
-/** Builds a compact context payload for the AI. */
-export function useOverseerContext() {
-  const today = todayStr();
-  return useStore((s) => {
-    const last7 = lastNDates(7);
-    const last14 = lastNDates(14);
-
-    const routineTodayDone = s.routine.filter(
-      (r) => r.history[today]?.completed
-    ).length;
-    const routineCompletedAtToday = s.routine
-      .map((r) => r.history[today]?.completedAt)
-      .filter(Boolean) as string[];
-    const finalCompletionStamp =
-      routineCompletedAtToday.length === s.routine.length &&
-      routineCompletedAtToday.length > 0
-        ? routineCompletedAtToday.sort().slice(-1)[0]
-        : null;
-
-    const skippedCounts: Array<{ name: string; skipped: number }> = s.routine
-      .map((r) => ({
+  const dates = lastNDates(days);
+  return [...routine]
+    .sort((a, b) => a.order - b.order)
+    .map((r) => {
+      const done = dates.filter((d) => r.history[d]?.completed).length;
+      return {
+        id: r.id,
         name: r.name,
-        skipped: last14.filter((d) => !r.history[d]?.completed).length,
-      }))
-      .sort((a, b) => b.skipped - a.skipped)
-      .slice(0, 5);
-
-    const last7RoutineDone = last7.reduce(
-      (acc, d) =>
-        acc + s.routine.filter((r) => r.history[d]?.completed).length,
-      0
-    );
-    const last7RoutineTotal = last7.length * s.routine.length;
-
-    return {
-      today,
-      dayType: s.days[today]?.dayType ?? "",
-      reminder: s.days[today]?.reminder ?? "",
-      goalsToday: s.goals
-        .filter((g) => g.date === today)
-        .map((g) => ({
-          text: g.text,
-          done: g.completed,
-          priority: g.priority,
-          emoji: g.emoji,
-          category: g.category,
-        })),
-      habits: s.habits.map((h) => ({
-        name: h.name,
-        doneToday: !!h.history[today],
-        streak: streakForHabit(h.history, today),
-      })),
-      morningRoutine: {
-        total: s.routine.length,
-        doneToday: routineTodayDone,
-        items: s.routine
-          .sort((a, b) => a.order - b.order)
-          .map((r) => ({
-            name: r.name,
-            doneToday: !!r.history[today]?.completed,
-            completedAt: r.history[today]?.completedAt,
-          })),
-        completedAtToday: finalCompletionStamp,
-        currentStreak: routineStreak(s.routine, today),
-        last7DayRatePct: last7RoutineTotal
-          ? Math.round((last7RoutineDone / last7RoutineTotal) * 100)
-          : 0,
-        mostSkipped14d: skippedCounts,
-      },
-      workoutsToday: s.workouts
-        .filter((w) => w.date === today)
-        .map((w) => ({
-          type: w.type,
-          durationMin: w.durationMin,
-          intensity: w.intensity,
-        })),
-      health: s.health[today],
-      plansTomorrow: s.plans
-        .filter((p) => p.date === today)
-        .map((p) => p.text),
-      winsToday: s.wins.filter((w) => w.date === today).map((w) => w.text),
-      strugglesToday: s.struggles
-        .filter((x) => x.date === today)
-        .map((x) => x.text),
-      last7DaysSummary: last7.map((date) => ({
-        date,
-        goalsDone: s.goals.filter((g) => g.date === date && g.completed).length,
-        goalsTotal: s.goals.filter((g) => g.date === date).length,
-        sleepHours: s.health[date]?.sleepHours,
-        mood: s.health[date]?.mood,
-        energy: s.health[date]?.energy,
-        habitsDone: s.habits.filter((h) => h.history[date]).length,
-        habitsTotal: s.habits.length,
-        morningDone: s.routine.filter((r) => r.history[date]?.completed)
-          .length,
-        morningTotal: s.routine.length,
-      })),
-      recentJournal: s.journal.slice(0, 3).map((j) => ({
-        date: j.date,
-        snippet: j.text.slice(0, 200),
-        mood: j.mood,
-      })),
-    };
-  });
+        icon: r.icon,
+        pct: Math.round((done / dates.length) * 100),
+      };
+    });
 }
 
-export type OverseerContext = ReturnType<typeof useOverseerContext>;
+/**
+ * Builds a compact context payload for the AI.
+ *
+ * NOTE: not a hook — call it lazily right before posting to /api/overseer.
+ * Subscribing to the entire deeply-nested object via useStore would force
+ * every consumer to re-render on every state change (the selector returns
+ * a new reference each call and shallow equality can't help for nested
+ * data), and that produced an infinite update loop on initial hydration.
+ */
+export function getOverseerContext() {
+  const today = todayStr();
+  const s = useStore.getState();
+  const last7 = lastNDates(7);
+  const last14 = lastNDates(14);
+
+  const routineTodayDone = s.routine.filter(
+    (r) => r.history[today]?.completed
+  ).length;
+  const routineCompletedAtToday = s.routine
+    .map((r) => r.history[today]?.completedAt)
+    .filter(Boolean) as string[];
+  const finalCompletionStamp =
+    routineCompletedAtToday.length === s.routine.length &&
+    routineCompletedAtToday.length > 0
+      ? [...routineCompletedAtToday].sort().slice(-1)[0]
+      : null;
+
+  const skippedCounts: Array<{ name: string; skipped: number }> = s.routine
+    .map((r) => ({
+      name: r.name,
+      skipped: last14.filter((d) => !r.history[d]?.completed).length,
+    }))
+    .sort((a, b) => b.skipped - a.skipped)
+    .slice(0, 5);
+
+  const last7RoutineDone = last7.reduce(
+    (acc, d) =>
+      acc + s.routine.filter((r) => r.history[d]?.completed).length,
+    0
+  );
+  const last7RoutineTotal = last7.length * s.routine.length;
+
+  return {
+    today,
+    dayType: s.days[today]?.dayType ?? "",
+    reminder: s.days[today]?.reminder ?? "",
+    goalsToday: s.goals
+      .filter((g) => g.date === today)
+      .map((g) => ({
+        text: g.text,
+        done: g.completed,
+        priority: g.priority,
+        emoji: g.emoji,
+        category: g.category,
+      })),
+    habits: s.habits.map((h) => ({
+      name: h.name,
+      doneToday: !!h.history[today],
+      streak: streakForHabit(h.history, today),
+    })),
+    morningRoutine: {
+      total: s.routine.length,
+      doneToday: routineTodayDone,
+      items: [...s.routine]
+        .sort((a, b) => a.order - b.order)
+        .map((r) => ({
+          name: r.name,
+          doneToday: !!r.history[today]?.completed,
+          completedAt: r.history[today]?.completedAt,
+        })),
+      completedAtToday: finalCompletionStamp,
+      currentStreak: routineStreak(s.routine, today),
+      last7DayRatePct: last7RoutineTotal
+        ? Math.round((last7RoutineDone / last7RoutineTotal) * 100)
+        : 0,
+      mostSkipped14d: skippedCounts,
+    },
+    workoutsToday: s.workouts
+      .filter((w) => w.date === today)
+      .map((w) => ({
+        type: w.type,
+        durationMin: w.durationMin,
+        intensity: w.intensity,
+      })),
+    health: s.health[today],
+    plansTomorrow: s.plans
+      .filter((p) => p.date === today)
+      .map((p) => p.text),
+    winsToday: s.wins.filter((w) => w.date === today).map((w) => w.text),
+    strugglesToday: s.struggles
+      .filter((x) => x.date === today)
+      .map((x) => x.text),
+    last7DaysSummary: last7.map((date) => ({
+      date,
+      goalsDone: s.goals.filter((g) => g.date === date && g.completed).length,
+      goalsTotal: s.goals.filter((g) => g.date === date).length,
+      sleepHours: s.health[date]?.sleepHours,
+      mood: s.health[date]?.mood,
+      energy: s.health[date]?.energy,
+      habitsDone: s.habits.filter((h) => h.history[date]).length,
+      habitsTotal: s.habits.length,
+      morningDone: s.routine.filter((r) => r.history[date]?.completed).length,
+      morningTotal: s.routine.length,
+    })),
+    recentJournal: s.journal.slice(0, 3).map((j) => ({
+      date: j.date,
+      snippet: j.text.slice(0, 200),
+      mood: j.mood,
+    })),
+  };
+}
+
+export type OverseerContext = ReturnType<typeof getOverseerContext>;
