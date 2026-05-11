@@ -12,10 +12,13 @@ import {
   AccentColor,
   DEFAULT_MORNING_ROUTINE,
   HABIT_TEMPLATES,
+  LIFE_GOAL_CATEGORIES,
+  LifeGoalCategory,
   Units,
 } from "@/lib/types";
 import { haptic } from "@/lib/haptics";
 import { cn } from "@/lib/utils";
+import { Input } from "@/components/ui/input";
 
 const ACCENT_SWATCH: Array<{
   key: AccentColor;
@@ -36,6 +39,8 @@ export default function OnboardingPage() {
   const addHabit = useStore((s) => s.addHabit);
   const updateSettings = useStore((s) => s.updateSettings);
   const resetRoutine = useStore((s) => s.resetRoutineToDefaults);
+  const setNutritionTargets = useStore((s) => s.setNutritionTargets);
+  const addLifeGoal = useStore((s) => s.addLifeGoal);
 
   const [step, setStep] = React.useState(0);
   const [weight, setWeight] = React.useState<"lb" | "kg">("lb");
@@ -45,6 +50,14 @@ export default function OnboardingPage() {
   const [routinePicked, setRoutinePicked] = React.useState<Set<string>>(
     () => new Set(DEFAULT_MORNING_ROUTINE.map((d) => d.name))
   );
+  const [nutritionEnabled, setNutritionEnabled] = React.useState(false);
+  const [calTarget, setCalTarget] = React.useState("");
+  const [proteinTarget, setProteinTarget] = React.useState("");
+  const [carbsTarget, setCarbsTarget] = React.useState("");
+  const [fatTarget, setFatTarget] = React.useState("");
+  const [lifeGoalTitle, setLifeGoalTitle] = React.useState("");
+  const [lifeGoalCat, setLifeGoalCat] =
+    React.useState<LifeGoalCategory>("personal");
 
   const togglePick = (name: string) =>
     setPicked((s) => {
@@ -70,6 +83,32 @@ export default function OnboardingPage() {
       if (t) addHabit(t.name, t.icon);
     }
     resetRoutine(Array.from(routinePicked));
+
+    if (nutritionEnabled) {
+      const toNum = (v: string) => {
+        const n = parseInt(v, 10);
+        return Number.isFinite(n) ? n : undefined;
+      };
+      const cal = toNum(calTarget);
+      const protein = toNum(proteinTarget);
+      if (cal != null || protein != null) {
+        setNutritionTargets({
+          enabled: true,
+          calories: cal,
+          protein,
+          carbs: toNum(carbsTarget),
+          fat: toNum(fatTarget),
+        });
+      }
+    }
+
+    if (lifeGoalTitle.trim()) {
+      addLifeGoal({
+        title: lifeGoalTitle.trim(),
+        category: lifeGoalCat,
+      });
+    }
+
     updateSettings({ hasOnboarded: true });
     haptic("success");
     router.replace("/");
@@ -238,6 +277,118 @@ export default function OnboardingPage() {
           <div className="mt-3 text-center text-xs text-[var(--color-fg-2)]">
             {routinePicked.size} of {DEFAULT_MORNING_ROUTINE.length} kept
           </div>
+        </StepShell>
+      ),
+      canNext: true,
+    },
+    {
+      render: (
+        <StepShell
+          title="Daily nutrition targets"
+          subtitle="Track macros if you want. Skip if not."
+        >
+          <button
+            type="button"
+            onClick={() => setNutritionEnabled((v) => !v)}
+            className={cn(
+              "w-full p-3 rounded-xl border text-left transition mb-3",
+              nutritionEnabled
+                ? "border-[var(--color-accent)] bg-[var(--color-accent-soft)]"
+                : "border-[var(--color-stroke)] bg-[var(--color-elevated)]"
+            )}
+          >
+            <div className="text-sm font-medium">
+              {nutritionEnabled ? "Enabled" : "Tap to enable"}
+            </div>
+            <div className="text-xs text-[var(--color-fg-3)] mt-0.5">
+              Shows a macros section on Today.
+            </div>
+          </button>
+          {nutritionEnabled && (
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <div className="label mb-2 text-[9px]">Calories</div>
+                <Input
+                  type="number"
+                  inputMode="numeric"
+                  value={calTarget}
+                  onChange={(e) => setCalTarget(e.target.value)}
+                  placeholder="2200"
+                />
+              </div>
+              <div>
+                <div className="label mb-2 text-[9px]">Protein (g)</div>
+                <Input
+                  type="number"
+                  inputMode="numeric"
+                  value={proteinTarget}
+                  onChange={(e) => setProteinTarget(e.target.value)}
+                  placeholder="180"
+                />
+              </div>
+              <div>
+                <div className="label mb-2 text-[9px]">Carbs (g)</div>
+                <Input
+                  type="number"
+                  inputMode="numeric"
+                  value={carbsTarget}
+                  onChange={(e) => setCarbsTarget(e.target.value)}
+                  placeholder="—"
+                />
+              </div>
+              <div>
+                <div className="label mb-2 text-[9px]">Fat (g)</div>
+                <Input
+                  type="number"
+                  inputMode="numeric"
+                  value={fatTarget}
+                  onChange={(e) => setFatTarget(e.target.value)}
+                  placeholder="—"
+                />
+              </div>
+            </div>
+          )}
+        </StepShell>
+      ),
+      canNext: true,
+    },
+    {
+      render: (
+        <StepShell
+          title="Something for your lifetime?"
+          subtitle="Optional. One thing you want to do — start your bucket list."
+        >
+          <Input
+            value={lifeGoalTitle}
+            onChange={(e) => setLifeGoalTitle(e.target.value)}
+            placeholder="Visit Japan, learn to surf…"
+            className="text-base"
+          />
+          {lifeGoalTitle.trim().length > 0 && (
+            <div className="mt-3">
+              <div className="label mb-2">Category</div>
+              <div className="grid grid-cols-4 gap-1.5">
+                {LIFE_GOAL_CATEGORIES.map((c) => (
+                  <button
+                    key={c.key}
+                    type="button"
+                    onClick={() => setLifeGoalCat(c.key)}
+                    className={cn(
+                      "h-14 rounded-lg border flex flex-col items-center justify-center gap-0.5 transition",
+                      lifeGoalCat === c.key
+                        ? "border-[var(--color-accent)] bg-[var(--color-accent-soft)]"
+                        : "border-[var(--color-stroke)] bg-[var(--color-elevated)]"
+                    )}
+                  >
+                    <span className="text-base">{c.emoji}</span>
+                    <span className="text-[9px] text-[var(--color-fg-2)]">
+                      {c.label}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </StepShell>
       ),
       canNext: true,

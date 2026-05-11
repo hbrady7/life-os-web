@@ -234,6 +234,8 @@ export default function SettingsPage() {
         </Button>
       </Card>
 
+      <NutritionSettingsCard />
+
       <Card>
         <CardHeader>
           <CardTitle>Backup</CardTitle>
@@ -343,5 +345,53 @@ export default function SettingsPage() {
         </p>
       </Modal>
     </Screen>
+  );
+}
+
+function NutritionSettingsCard() {
+  const targets = useStore((s) => s.settings.nutrition);
+  const setNutritionTargets = useStore((s) => s.setNutritionTargets);
+  const showOnToday = useStore((s) => s.settings.showNutritionOnToday);
+  const setShowNutritionOnToday = useStore((s) => s.setShowNutritionOnToday);
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Nutrition</CardTitle>
+      </CardHeader>
+      <div className="space-y-1">
+        <ToggleRow
+          label="Tracking enabled"
+          description="Show macro targets and meal logging."
+          checked={targets.enabled}
+          onChange={(v) => setNutritionTargets({ enabled: v })}
+        />
+        <ToggleRow
+          label="Show on Today"
+          checked={showOnToday}
+          onChange={setShowNutritionOnToday}
+        />
+      </div>
+      <div className="mt-3 grid grid-cols-2 gap-3">
+        {(["calories", "protein", "carbs", "fat"] as const).map((k) => (
+          <div key={k}>
+            <div className="label mb-2 text-[9px]">
+              {k === "calories" ? "Calories" : `${k} (g)`}
+            </div>
+            <Input
+              type="number"
+              inputMode="numeric"
+              value={targets[k] ?? ""}
+              onChange={(e) => {
+                const n = parseInt(e.target.value, 10);
+                setNutritionTargets({
+                  [k]: Number.isFinite(n) ? n : undefined,
+                });
+              }}
+              placeholder="—"
+            />
+          </div>
+        ))}
+      </div>
+    </Card>
   );
 }

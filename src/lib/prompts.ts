@@ -1,21 +1,29 @@
 import type { OverseerContext } from "@/store/selectors";
 
-export const PERSONA_SYSTEM = `You are Overseer — a direct, encouraging, no-fluff personal coach embedded in the user's daily life-OS dashboard. You see the full data: goals, habits, morning routine, workouts, mood/energy/sleep/water/weight/steps, journal entries, streaks.
+export const PERSONA_SYSTEM = `You are Overseer — a direct, encouraging, no-fluff personal coach embedded in the user's daily life-OS dashboard. You see the full data:
+- goals, habits, morning routine, workouts
+- mood, sleep, water, weight, steps
+- energy curve (4 periods per day: morning, midday, afternoon, evening)
+- today's schedule (time-blocked plan)
+- nutrition (today's totals vs targets, 7-day protein avg)
+- people to keep up with (overdue + due-soon)
+- latest body measurements + 30-day trend
+- active life goals + progress
+- journal entries
 
 Voice rules — non-negotiable:
 - Sharp, plain, warm. No corporate language. No bullet lists unless they truly help. No preamble like "Great question!" or "Of course!". Just the answer.
 - Default to a sentence or two. Go longer only when the user asks.
 - Cite the data concretely. "Your second goal is the biggest unlock today" beats "focus on priorities".
-- Call out patterns when you see them ("Your mood drops on days you skip morning sunlight"). Don't sugarcoat — if the data says something, say it.
-- Never invent goals, habits, routine items, or numbers the user didn't log. If context is sparse, ask one short clarifying question instead of guessing.
-- Never lecture. Encourage by being precise.
-
-Morning routine — reference it naturally when it's relevant. Examples of voice (never copy verbatim):
-- "You skipped stretches 3 days in a row — anything going on?"
-- "Nice 12-day streak. Keep it rolling."
-- "You finish your routine 30 minutes later on days you sleep poorly."
-- "You're 0 of 8 on your morning — want to start with the easiest one?"
-- "Sunlight and stretches are the two you bail on most. Try stacking them."`;
+- Call out patterns. When the user asks for advice, *prefer to make connections across data types*. Examples (never copy verbatim):
+  - "Your energy dips midday and you haven't been hitting protein — try a higher-protein lunch."
+  - "You finish your morning routine 30 min later on days you sleep poorly."
+  - "Sunlight and stretches are the two you bail on most. Try stacking them."
+  - "It's been 5 weeks since you talked to Dad — want to send him a text?"
+  - "Your 'learn Spanish' goal is at 40%. You've been consistent — keep going."
+  - "You're 0 of 8 on your morning. Want to start with the easiest one?"
+- Never invent items the user didn't log. If context is sparse, ask one short clarifying question instead of guessing.
+- Never lecture. Encourage by being precise.`;
 
 export function buildContextBlock(ctx: OverseerContext): string {
   const renderGoals = ctx.goalsToday.length
@@ -97,6 +105,58 @@ export function buildContextBlock(ctx: OverseerContext): string {
         .join("\n")
     : "  (none)";
 
+  // schedule
+  const schedule = ctx.scheduleToday?.length
+    ? ctx.scheduleToday
+        .map(
+          (b) =>
+            `  - ${b.start}-${b.end} (${b.type}) ${b.title}${
+              b.done ? " [done]" : ""
+            }`
+        )
+        .join("\n")
+    : "  (empty)";
+
+  // energy
+  const renderEnergyToday = ctx.energyToday
+    ? Object.entries(ctx.energyToday)
+        .map(([p, v]) => `  - ${p}: ${v ?? "—"}`)
+        .join("\n")
+    : "  (none)";
+
+  // nutrition
+  const nutrition = ctx.nutritionToday
+    ? [
+        `  totals: ${ctx.nutritionToday.totals.calories}c · ${ctx.nutritionToday.totals.protein}p · ${ctx.nutritionToday.totals.carbs ?? 0}c · ${ctx.nutritionToday.totals.fat ?? 0}f`,
+        `  targets: ${ctx.nutritionToday.targets.calories ?? "—"}c · ${ctx.nutritionToday.targets.protein ?? "—"}p`,
+        `  7-day protein avg: ${ctx.nutritionToday.proteinAvg7 ?? "—"}g`,
+      ].join("\n")
+    : "  (disabled)";
+
+  // people
+  const peopleOverdue = ctx.peopleOverdue?.length
+    ? ctx.peopleOverdue
+        .map((p) => `  - ${p.name} (${p.relationship}) — ${p.days}d`)
+        .join("\n")
+    : "  (none)";
+
+  // body
+  const body = ctx.bodyLatest
+    ? `  ${ctx.bodyLatest.date}: weight ${ctx.bodyLatest.weight ?? "—"}, bodyfat ${ctx.bodyLatest.bodyFatPct ?? "—"}%`
+    : "  (no measurements)";
+
+  // life goals
+  const lifeGoals = ctx.activeLifeGoals?.length
+    ? ctx.activeLifeGoals
+        .map(
+          (g) =>
+            `  - ${g.emoji ?? "•"} ${g.title} (${g.category})${
+              g.measurable ? ` — ${g.progress}%` : ""
+            }${g.targetYear ? ` · ${g.targetYear}` : ""}`
+        )
+        .join("\n")
+    : "  (none)";
+
   return [
     `Today: ${ctx.today}`,
     `Day type: ${ctx.dayType || "(unset)"}`,
@@ -105,17 +165,35 @@ export function buildContextBlock(ctx: OverseerContext): string {
     "Goals today:",
     renderGoals,
     "",
+    "Schedule today:",
+    schedule,
+    "",
     "Habits:",
     renderHabits,
     "",
     "Morning routine:",
     renderMorning,
     "",
+    "Energy today (1-10 by period):",
+    renderEnergyToday,
+    "",
     "Workouts today:",
     renderWorkouts,
     "",
     "Health today:",
     health,
+    "",
+    "Nutrition today:",
+    nutrition,
+    "",
+    "People overdue to contact:",
+    peopleOverdue,
+    "",
+    "Latest body measurement:",
+    body,
+    "",
+    "Active life goals:",
+    lifeGoals,
     "",
     "Plans for tomorrow:",
     renderList(ctx.plansTomorrow),
