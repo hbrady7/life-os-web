@@ -20,12 +20,14 @@ import type {
   Goal,
   Habit,
   JournalEntry,
+  LiftSession,
   Meal,
   MorningRoutineItem,
   PhotoMeta,
   RecurringGoal,
   RecurringGoalGeneration,
   SavedMeal,
+  Workout,
 } from "@/lib/types";
 import { ENERGY_PERIODS, ENERGY_PERIOD_RANGES } from "@/lib/types";
 import { computeRecurringStats, shouldGenerateForDate, patternSummary } from "@/lib/recurrence";
@@ -575,6 +577,41 @@ function fmtMin(m: number): string {
  * a new reference each call and shallow equality can't help for nested
  * data), and that produced an infinite update loop on initial hydration.
  */
+/**
+ * Pulls the matched {workout, liftSession} for a date — either or both may
+ * be present. Used by the unified Gym page to render one row per session.
+ */
+export function getSessionForDate(
+  date: DateStr
+): { workout?: Workout; liftSession?: LiftSession } {
+  const s = useStore.getState();
+  return {
+    workout: s.workouts.find((w) => w.date === date),
+    liftSession: s.liftSessions.find((l) => l.date === date),
+  };
+}
+
+export function useUnifiedGymSessions(): Array<{
+  date: DateStr;
+  workout?: Workout;
+  liftSession?: LiftSession;
+}> {
+  return useStore(
+    useShallow((s) => {
+      const dates = new Set<DateStr>();
+      for (const l of s.liftSessions) dates.add(l.date);
+      for (const w of s.workouts) dates.add(w.date);
+      return [...dates]
+        .sort((a, b) => b.localeCompare(a))
+        .map((date) => ({
+          date,
+          workout: s.workouts.find((w) => w.date === date),
+          liftSession: s.liftSessions.find((l) => l.date === date),
+        }));
+    })
+  );
+}
+
 export function getOverseerContext() {
   const today = todayStr();
   const s = useStore.getState();

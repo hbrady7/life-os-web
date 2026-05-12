@@ -19,10 +19,12 @@ import { ConfirmModal } from "@/components/ui/confirm-modal";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Segmented } from "@/components/ui/segmented";
+import { Slider } from "@/components/ui/slider";
 import { useStore } from "@/store";
 import {
   LiftExercise,
   LiftSession,
+  Workout,
 } from "@/lib/types";
 import {
   bestE1RM,
@@ -36,6 +38,7 @@ import { todayStr, format, fromDateStr } from "@/lib/date";
 import { round1 } from "@/lib/utils";
 import { haptic } from "@/lib/haptics";
 import { cn } from "@/lib/utils";
+import { useUnifiedGymSessions } from "@/store/selectors";
 
 type Metric = "top" | "e1rm" | "volume";
 
@@ -46,27 +49,24 @@ const METRIC_LABEL: Record<Metric, string> = {
 };
 
 export default function GymPage() {
-  const sessions = useStore((s) => s.liftSessions);
+  const liftSessions = useStore((s) => s.liftSessions);
   const removeLiftSession = useStore((s) => s.removeLiftSession);
+  const removeWorkout = useStore((s) => s.removeWorkout);
+  const unified = useUnifiedGymSessions();
 
   const [pasteOpen, setPasteOpen] = React.useState(false);
-  const [deleteTarget, setDeleteTarget] = React.useState<LiftSession | null>(
-    null
-  );
+  const [deleteTarget, setDeleteTarget] = React.useState<{
+    liftSessionId?: string;
+    workoutId?: string;
+    date: string;
+  } | null>(null);
   const [metric, setMetric] = React.useState<Metric>("top");
 
-  const sortedSessions = React.useMemo(
-    () =>
-      [...sessions].sort(
-        (a, b) =>
-          b.date.localeCompare(a.date) ||
-          b.createdAt.localeCompare(a.createdAt)
-      ),
-    [sessions]
-  );
-
-  // Group sessions by normalized exercise name for the progress charts
+  // Progress charts — unchanged: pure from liftSessions
   const byExercise = React.useMemo(() => {
+    const sorted = [...liftSessions].sort((a, b) =>
+      b.date.localeCompare(a.date)
+    );
     const map = new Map<
       string,
       {
@@ -81,7 +81,7 @@ export default function GymPage() {
         }>;
       }
     >();
-    for (const ses of sortedSessions) {
+    for (const ses of sorted) {
       for (const ex of ses.exercises) {
         const key = ex.normalizedName;
         const ts = topSet(ex.sets);
@@ -91,7 +91,6 @@ export default function GymPage() {
             displayName: ex.name,
             points: [],
           };
-        // Prefer the latest casing for display name
         entry.displayName = entry.displayName || ex.name;
         entry.points.push({
           date: ses.date,
@@ -104,19 +103,18 @@ export default function GymPage() {
         map.set(key, entry);
       }
     }
-    // Sort each exercise's points ascending in time
     for (const v of map.values()) {
       v.points.sort((a, b) => a.date.localeCompare(b.date));
     }
     return Array.from(map.entries()).sort(
       (a, b) => b[1].points.length - a[1].points.length
     );
-  }, [sortedSessions]);
+  }, [liftSessions]);
 
   return (
     <Screen
       title="Gym"
-      subtitle="Paste a RepCount-style log. Track lift progress over time."
+      subtitle="Type + duration + sets, all on one screen. Paste from RepCount."
     >
       <Button onClick={() => setPasteOpen(true)} className="w-full" size="lg">
         <Plus size={16} />
@@ -155,11 +153,11 @@ export default function GymPage() {
         <CardHeader>
           <CardTitle>Sessions</CardTitle>
           <span className="text-xs text-[var(--color-fg-3)]">
-            {sortedSessions.length}{" "}
-            {sortedSessions.length === 1 ? "session" : "sessions"}
+            {unified.length}{" "}
+            {unified.length === 1 ? "session" : "sessions"}
           </span>
         </CardHeader>
-        {sortedSessions.length === 0 ? (
+        {unified.length === 0 ? (
           <div className="py-8 text-center">
             <div className="text-sm text-[var(--color-fg-2)]">
               No sessions yet.
@@ -169,23 +167,31 @@ export default function GymPage() {
               onClick={() => setPasteOpen(true)}
               className="mt-2 text-xs text-[var(--color-accent)]"
             >
-              Paste your first log →
+              Log your first →
             </button>
           </div>
         ) : (
           <ul className="space-y-2">
-            {sortedSessions.map((ses) => (
+            {unified.map((s) => (
               <SessionRow
-                key={ses.id}
-                session={ses}
-                onDelete={() => setDeleteTarget(ses)}
+                key={s.date}
+                date={s.date}
+                workout={s.workout}
+                liftSession={s.liftSession}
+                onDelete={() =>
+                  setDeleteTarget({
+                    liftSessionId: s.liftSession?.id,
+                    workoutId: s.workout?.id,
+                    date: s.date,
+                  })
+                }
               />
             ))}
           </ul>
         )}
       </Card>
 
-      <PasteModal
+      <NewSessionModal
         open={pasteOpen}
         onClose={() => setPasteOpen(false)}
       />
@@ -194,13 +200,15 @@ export default function GymPage() {
         open={!!deleteTarget}
         onClose={() => setDeleteTarget(null)}
         onConfirm={() => {
-          if (deleteTarget) {
-            removeLiftSession(deleteTarget.id);
-            haptic("warn");
-          }
+          if (!deleteTarget) return;
+          if (deleteTarget.liftSessionId)
+            removeLiftSession(deleteTarget.liftSessionId);
+          if (deleteTarget.workoutId)
+            removeWorkout(deleteTarget.workoutId);
+          haptic("warn");
         }}
         title="Delete this session?"
-        description="Removes every exercise + set logged that day. The charts will update automatically."
+        description="Removes the workout metadata and any logged sets for this date. Charts update automatically."
       />
     </Screen>
   );
@@ -324,18 +332,28 @@ function ExerciseChart({
 }
 
 function SessionRow({
-  session,
+  date,
+  workout,
+  liftSession,
   onDelete,
 }: {
-  session: LiftSession;
+  date: string;
+  workout?: Workout;
+  liftSession?: LiftSession;
   onDelete: () => void;
 }) {
   const [open, setOpen] = React.useState(false);
-  const exerciseCount = session.exercises.length;
-  const setCount = session.exercises.reduce(
-    (a, e) => a + e.sets.length,
-    0
-  );
+  const upsertWorkoutForDate = useStore((s) => s.upsertWorkoutForDate);
+  const dayTypePresets = useStore((s) => s.settings.dayTypePresets);
+
+  const exerciseCount = liftSession?.exercises.length ?? 0;
+  const setCount =
+    liftSession?.exercises.reduce((a, e) => a + e.sets.length, 0) ?? 0;
+
+  const updateMeta = (
+    patch: Partial<Pick<Workout, "type" | "durationMin" | "intensity">>
+  ) => upsertWorkoutForDate(date, patch);
+
   return (
     <li className="rounded-xl border border-[var(--color-stroke)] bg-[var(--color-elevated)]/40">
       <button
@@ -344,14 +362,29 @@ function SessionRow({
         className="w-full px-3 py-2.5 flex items-center gap-3 text-left"
       >
         <div className="flex-1 min-w-0">
-          <div className="text-sm font-medium">
-            {format(fromDateStr(session.date), "EEEE, MMM d, yyyy")}
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-sm font-medium">
+              {format(fromDateStr(date), "EEEE, MMM d, yyyy")}
+            </span>
+            {workout?.type && workout.type !== "Other" && (
+              <span className="inline-flex items-center h-5 px-2 rounded-full text-[10px] font-medium bg-[var(--color-accent-soft)] text-[var(--color-accent)] border border-[color:color-mix(in_srgb,var(--color-accent)_22%,transparent)]">
+                {workout.type}
+              </span>
+            )}
           </div>
-          <div className="text-[11px] text-[var(--color-fg-3)] truncate">
-            {exerciseCount} exercise{exerciseCount === 1 ? "" : "s"} · {setCount}{" "}
-            set{setCount === 1 ? "" : "s"}
-            {" · "}
-            {session.exercises.map((e) => e.name).join(", ")}
+          <div className="text-[11px] text-[var(--color-fg-3)] truncate mt-0.5">
+            {liftSession ? (
+              <>
+                {exerciseCount} exercise{exerciseCount === 1 ? "" : "s"} ·{" "}
+                {setCount} set{setCount === 1 ? "" : "s"}
+              </>
+            ) : (
+              <>No lift log</>
+            )}
+            {workout?.durationMin ? ` · ${workout.durationMin} min` : ""}
+            {workout?.intensity
+              ? ` · intensity ${workout.intensity}/10`
+              : ""}
           </div>
         </div>
         <button
@@ -373,9 +406,63 @@ function SessionRow({
           )}
         />
       </button>
+
       {open && (
-        <div className="px-3 pb-3 space-y-2.5">
-          {session.exercises.map((ex) => (
+        <div className="px-3 pb-3 space-y-3">
+          {/* Inline-edit metadata */}
+          <div className="rounded-lg bg-[var(--color-card)] border border-[var(--color-stroke)] p-2.5 space-y-2.5">
+            <div>
+              <div className="label text-[9px] mb-1.5">Workout type</div>
+              <div className="flex flex-wrap gap-1.5">
+                {dayTypePresets.map((t) => (
+                  <button
+                    key={t}
+                    type="button"
+                    onClick={() => updateMeta({ type: t })}
+                    className={cn(
+                      "h-7 px-2.5 rounded-full text-[11px] border transition",
+                      workout?.type === t
+                        ? "bg-[var(--color-accent-soft)] text-[var(--color-accent)] border-[color:color-mix(in_srgb,var(--color-accent)_24%,transparent)]"
+                        : "border-[var(--color-stroke)] text-[var(--color-fg-2)]"
+                    )}
+                  >
+                    {t}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-2.5">
+              <div>
+                <div className="label text-[9px] mb-1.5">Duration (min)</div>
+                <Input
+                  type="number"
+                  inputMode="numeric"
+                  value={workout?.durationMin ?? ""}
+                  onChange={(e) =>
+                    updateMeta({
+                      durationMin: parseInt(e.target.value, 10) || 0,
+                    })
+                  }
+                  placeholder="—"
+                />
+              </div>
+              <div>
+                <div className="label text-[9px] mb-1.5">
+                  Intensity {workout?.intensity ?? 0}/10
+                </div>
+                <Slider
+                  value={workout?.intensity ?? 0}
+                  min={0}
+                  max={10}
+                  step={1}
+                  onChange={(v) => updateMeta({ intensity: v })}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Lift detail */}
+          {liftSession?.exercises.map((ex) => (
             <ExerciseDetail key={ex.id} ex={ex} />
           ))}
         </div>
@@ -425,7 +512,7 @@ function ExerciseDetail({ ex }: { ex: LiftExercise }) {
   );
 }
 
-function PasteModal({
+function NewSessionModal({
   open,
   onClose,
 }: {
@@ -433,13 +520,21 @@ function PasteModal({
   onClose: () => void;
 }) {
   const addLiftSession = useStore((s) => s.addLiftSession);
+  const upsertWorkoutForDate = useStore((s) => s.upsertWorkoutForDate);
+  const dayTypePresets = useStore((s) => s.settings.dayTypePresets);
   const [raw, setRaw] = React.useState("");
   const [fallbackDate, setFallbackDate] = React.useState(todayStr());
+  const [workoutType, setWorkoutType] = React.useState("");
+  const [durationMin, setDurationMin] = React.useState("");
+  const [intensity, setIntensity] = React.useState(0);
 
   React.useEffect(() => {
     if (open) {
       setRaw("");
       setFallbackDate(todayStr());
+      setWorkoutType("");
+      setDurationMin("");
+      setIntensity(0);
     }
   }, [open]);
 
@@ -448,13 +543,27 @@ function PasteModal({
     [raw, fallbackDate]
   );
 
-  const canSave =
-    !!parsed && parsed.exercises.length > 0;
+  const hasMetadata =
+    workoutType.trim().length > 0 ||
+    durationMin.trim().length > 0 ||
+    intensity > 0;
+  const hasLog = !!parsed && parsed.exercises.length > 0;
+  const canSave = hasLog || hasMetadata;
 
   const save = () => {
-    if (!parsed) return;
-    const session = parseResultToSession(parsed, raw);
-    addLiftSession(session);
+    const date = parsed?.date ?? fallbackDate;
+    if (hasLog && parsed) {
+      const session = parseResultToSession(parsed, raw);
+      addLiftSession(session);
+    }
+    if (hasMetadata) {
+      const dur = parseInt(durationMin, 10);
+      upsertWorkoutForDate(date, {
+        type: workoutType.trim() || undefined,
+        durationMin: Number.isFinite(dur) ? dur : undefined,
+        intensity: intensity > 0 ? intensity : undefined,
+      });
+    }
     haptic("success");
     onClose();
   };
@@ -464,7 +573,7 @@ function PasteModal({
       open={open}
       onClose={onClose}
       title="New gym session"
-      description="Paste a RepCount-style log. The first line can be a date."
+      description="Type + duration + intensity are optional. Paste a log for set-by-set tracking."
       size="lg"
       footer={
         <div className="flex items-center justify-end gap-2">
@@ -477,13 +586,62 @@ function PasteModal({
         </div>
       }
     >
-      <div className="space-y-3">
+      <div className="space-y-4">
         <div>
-          <div className="label mb-2">Paste log</div>
+          <div className="label mb-2">Workout type (optional)</div>
+          <div className="flex flex-wrap gap-1.5 mb-2">
+            {dayTypePresets.map((t) => (
+              <button
+                key={t}
+                type="button"
+                onClick={() => setWorkoutType(t)}
+                className={cn(
+                  "h-8 px-3 rounded-full text-xs border transition",
+                  workoutType === t
+                    ? "bg-[var(--color-accent-soft)] text-[var(--color-accent)] border-[color:color-mix(in_srgb,var(--color-accent)_24%,transparent)]"
+                    : "border-[var(--color-stroke)] text-[var(--color-fg-2)]"
+                )}
+              >
+                {t}
+              </button>
+            ))}
+          </div>
+          <Input
+            value={workoutType}
+            onChange={(e) => setWorkoutType(e.target.value)}
+            placeholder="Or type a custom name…"
+          />
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <div className="label mb-2">Duration (min)</div>
+            <Input
+              type="number"
+              inputMode="numeric"
+              value={durationMin}
+              onChange={(e) => setDurationMin(e.target.value)}
+              placeholder="—"
+            />
+          </div>
+          <div>
+            <div className="label mb-2">Intensity {intensity}/10</div>
+            <Slider
+              value={intensity}
+              min={0}
+              max={10}
+              step={1}
+              onChange={setIntensity}
+            />
+          </div>
+        </div>
+
+        <div>
+          <div className="label mb-2">Paste log (optional)</div>
           <Textarea
             value={raw}
             onChange={(e) => setRaw(e.target.value)}
-            rows={10}
+            rows={8}
             placeholder={`May 11, 2026
 
 Machine chest press
@@ -524,7 +682,7 @@ Logged using RepCount`}
                 Nothing parsed yet.
               </div>
             ) : (
-              <ul className="space-y-2 max-h-56 overflow-y-auto nice-scroll pr-1">
+              <ul className="space-y-2 max-h-48 overflow-y-auto nice-scroll pr-1">
                 {parsed.exercises.map((ex, i) => (
                   <li
                     key={i}

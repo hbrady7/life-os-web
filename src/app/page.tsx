@@ -5,7 +5,6 @@ import { MorningBriefing } from "@/components/today/morning-briefing";
 import { MorningRoutine } from "@/components/today/morning-routine";
 import { EveningRoutine } from "@/components/today/evening-routine";
 import { Goals } from "@/components/today/goals";
-import { Workouts } from "@/components/today/workouts";
 import { ReflectionCard } from "@/components/today/reflection";
 
 export default function Page() {
@@ -16,7 +15,6 @@ export default function Page() {
       <SleepCard />
       <MorningRoutine />
       <Goals />
-      <Workouts />
       <EveningRoutine />
       <ReflectionCard />
     </Screen>

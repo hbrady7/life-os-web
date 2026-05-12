@@ -119,6 +119,12 @@ type Actions = {
   addWorkout: (w: Omit<Workout, "id" | "createdAt">) => void;
   updateWorkout: (id: string, patch: Partial<Workout>) => void;
   removeWorkout: (id: string) => void;
+  /** Upsert workout metadata for a date — if one exists, patch it; else
+   * create a minimal entry. Returns the resulting workout id. */
+  upsertWorkoutForDate: (
+    date: DateStr,
+    patch: Partial<Pick<Workout, "type" | "durationMin" | "intensity" | "notes">>
+  ) => string;
 
   // health
   setHealth: (date: DateStr, patch: Partial<HealthLog>) => void;
@@ -492,6 +498,38 @@ export const useStore = create<State & Actions>()(
         })),
       removeWorkout: (id) =>
         set((s) => ({ workouts: s.workouts.filter((w) => w.id !== id) })),
+      upsertWorkoutForDate: (date, patch) => {
+        let resultId = "";
+        set((s) => {
+          const existing = s.workouts.find((w) => w.date === date);
+          if (existing) {
+            resultId = existing.id;
+            return {
+              workouts: s.workouts.map((w) =>
+                w.id === existing.id ? { ...w, ...patch } : w
+              ),
+            };
+          }
+          const id = uid();
+          resultId = id;
+          return {
+            workouts: [
+              ...s.workouts,
+              {
+                id,
+                date,
+                type: patch.type ?? "Other",
+                durationMin: patch.durationMin ?? 0,
+                intensity: patch.intensity ?? 0,
+                notes: patch.notes,
+                exercises: [],
+                createdAt: new Date().toISOString(),
+              },
+            ],
+          };
+        });
+        return resultId;
+      },
 
       setHealth: (date, patch) =>
         set((s) => ({

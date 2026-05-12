@@ -144,13 +144,12 @@ export type LiftSession = {
   raw?: string;
 };
 
-export type WorkoutType =
-  | "Push"
-  | "Pull"
-  | "Legs"
-  | "Cardio"
-  | "Yoga"
-  | "Other";
+/**
+ * Workout type was originally a narrow union but the Gym page lets users
+ * pick from dayTypePresets (or type their own), so we treat this as an
+ * open string. Common presets: Push, Pull, Legs, Cardio, Yoga, Other.
+ */
+export type WorkoutType = string;
 
 export type Exercise = {
   id: string;
