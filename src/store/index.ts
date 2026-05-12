@@ -35,6 +35,7 @@ import {
   PhotoAngle,
   PhotoMeta,
   Plan,
+  LiftSession,
   RecurringGoal,
   RecurringGoalGeneration,
   SavedMeal,
@@ -76,6 +77,7 @@ type State = {
   photos: PhotoMeta[];
   recurringGoals: RecurringGoal[];
   recurringGenerations: RecurringGoalGeneration[];
+  liftSessions: LiftSession[];
 };
 
 type Actions = {
@@ -196,6 +198,11 @@ type Actions = {
   /** Clears all generation history (recurring goal templates kept). */
   resetRecurringGenerations: () => void;
 
+  // gym / lift sessions
+  addLiftSession: (session: LiftSession) => void;
+  removeLiftSession: (id: string) => void;
+  updateLiftSession: (id: string, patch: Partial<LiftSession>) => void;
+
   // body measurements + photos
   addBodyMeasurement: (m: Omit<BodyMeasurement, "id" | "createdAt">) => void;
   updateBodyMeasurement: (id: string, patch: Partial<BodyMeasurement>) => void;
@@ -282,6 +289,7 @@ const initialState: State = {
   photos: [],
   recurringGoals: [],
   recurringGenerations: [],
+  liftSessions: [],
 };
 
 /** Pick the energy period from a clock hour. */
@@ -965,6 +973,19 @@ export const useStore = create<State & Actions>()(
       resetRecurringGenerations: () =>
         set(() => ({ recurringGenerations: [] })),
 
+      addLiftSession: (session) =>
+        set((s) => ({ liftSessions: [...s.liftSessions, session] })),
+      removeLiftSession: (id) =>
+        set((s) => ({
+          liftSessions: s.liftSessions.filter((x) => x.id !== id),
+        })),
+      updateLiftSession: (id, patch) =>
+        set((s) => ({
+          liftSessions: s.liftSessions.map((x) =>
+            x.id === id ? { ...x, ...patch } : x
+          ),
+        })),
+
       addBodyMeasurement: (m) =>
         set((s) => {
           const entry: BodyMeasurement = {
@@ -1041,6 +1062,7 @@ export const useStore = create<State & Actions>()(
             photos: s.photos,
             recurringGoals: s.recurringGoals,
             recurringGenerations: s.recurringGenerations,
+            liftSessions: s.liftSessions,
           },
         };
         return JSON.stringify(payload, null, 2);
@@ -1089,6 +1111,7 @@ export const useStore = create<State & Actions>()(
             photos: state.photos ?? [],
             recurringGoals: state.recurringGoals ?? [],
             recurringGenerations: state.recurringGenerations ?? [],
+            liftSessions: state.liftSessions ?? [],
           }));
           return true;
         } catch {
@@ -1160,6 +1183,7 @@ export const useStore = create<State & Actions>()(
           recurringGoals: p.recurringGoals ?? current.recurringGoals,
           recurringGenerations:
             p.recurringGenerations ?? current.recurringGenerations,
+          liftSessions: p.liftSessions ?? current.liftSessions,
         } as State & Actions;
         return merged;
       },

@@ -119,6 +119,31 @@ export type Habit = {
   createdAt: string;
 };
 
+/* ---------- GYM (RepCount-style logging) ---------- */
+
+export type LiftSet = {
+  weight: number; // lb (0 means bodyweight)
+  reps: number;
+  order: number;
+};
+
+export type LiftExercise = {
+  id: string;
+  name: string;
+  /** Lowercased + trimmed name for matching across sessions. */
+  normalizedName: string;
+  sets: LiftSet[];
+};
+
+export type LiftSession = {
+  id: string;
+  date: DateStr;
+  exercises: LiftExercise[];
+  createdAt: string;
+  /** Raw paste text, for re-edit / debug. */
+  raw?: string;
+};
+
 export type WorkoutType =
   | "Push"
   | "Pull"
