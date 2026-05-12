@@ -175,6 +175,8 @@ export type HealthLog = {
   date: DateStr; // primary key
   sleepHours?: number;
   sleepQuality?: number; // 1..10
+  /** Wake-up time as "HH:MM" 24h. Bedtime is derived = wakeTime - sleepHours. */
+  wakeTime?: string;
   mood?: number; // 1..10
   /** Legacy single-value energy. Kept for backward-compat; new code reads
    * from EnergyLog (`store.energy[date]`). */

@@ -165,6 +165,12 @@ export async function POST(req: Request) {
     );
   }
 
+  // Optional user-provided context — portion sizes, brand names, prep
+  // details. Clamped to a reasonable length to avoid prompt-stuffing.
+  const hintRaw = form.get("hint");
+  const hint =
+    typeof hintRaw === "string" ? hintRaw.trim().slice(0, 500) : "";
+
   const mimeType = (file.type && file.type.length > 0 ? file.type : "image/jpeg")
     .split(";")[0]
     .trim();
@@ -177,6 +183,10 @@ export async function POST(req: Request) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
 
+  const hintBlock = hint
+    ? `\n\n--- USER-PROVIDED CONTEXT ---\nThe user added these notes about the meal. Treat them as ground truth where they're more specific than the image alone — portion sizes, brand names, or prep details — and lift your confidence accordingly:\n${hint}\n`
+    : "";
+
   let rawText = "";
   try {
     const result = (await ai.models.generateContent({
@@ -185,7 +195,7 @@ export async function POST(req: Request) {
         {
           role: "user",
           parts: [
-            { text: SYSTEM_PROMPT },
+            { text: SYSTEM_PROMPT + hintBlock },
             { inlineData: { mimeType, data: base64 } },
           ],
         },

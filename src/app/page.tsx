@@ -1,6 +1,6 @@
 import { Screen } from "@/components/screen";
 import { TodayHeader } from "@/components/today/header";
-import { PulseStrip } from "@/components/today/pulse-strip";
+import { SleepCard } from "@/components/today/sleep-card";
 import { MorningBriefing } from "@/components/today/morning-briefing";
 import { MorningRoutine } from "@/components/today/morning-routine";
 import { EveningRoutine } from "@/components/today/evening-routine";
@@ -13,7 +13,7 @@ export default function Page() {
     <Screen>
       <MorningBriefing />
       <TodayHeader />
-      <PulseStrip />
+      <SleepCard />
       <MorningRoutine />
       <Goals />
       <Workouts />

@@ -32,12 +32,13 @@ const THUMB_WIDTH = 80;
 
 type Phase =
   | { kind: "capture" }
-  | { kind: "preview"; blob: Blob; objectUrl: string }
-  | { kind: "processing"; blob: Blob; objectUrl: string }
+  | { kind: "preview"; blob: Blob; objectUrl: string; hint: string }
+  | { kind: "processing"; blob: Blob; objectUrl: string; hint: string }
   | {
       kind: "upload-error";
       blob: Blob;
       objectUrl: string;
+      hint: string;
       message: string;
     }
   | { kind: "not-food"; blob: Blob; objectUrl: string; notes: string }
@@ -184,7 +185,7 @@ function PhotoFoodModalBody({ onClose }: { onClose: () => void }) {
           {phase.kind === "capture" && (
             <CaptureScreen
               onCaptured={(blob, url) =>
-                setPhase({ kind: "preview", blob, objectUrl: url })
+                setPhase({ kind: "preview", blob, objectUrl: url, hint: "" })
               }
               onCancel={onClose}
             />
@@ -192,12 +193,22 @@ function PhotoFoodModalBody({ onClose }: { onClose: () => void }) {
           {phase.kind === "preview" && (
             <PreviewScreen
               objectUrl={phase.objectUrl}
+              hint={phase.hint}
+              onHintChange={(hint) =>
+                setPhase({
+                  kind: "preview",
+                  blob: phase.blob,
+                  objectUrl: phase.objectUrl,
+                  hint,
+                })
+              }
               onRetake={() => setPhase({ kind: "capture" })}
               onAnalyze={() =>
                 setPhase({
                   kind: "processing",
                   blob: phase.blob,
                   objectUrl: phase.objectUrl,
+                  hint: phase.hint,
                 })
               }
             />
@@ -206,6 +217,7 @@ function PhotoFoodModalBody({ onClose }: { onClose: () => void }) {
             <ProcessingScreen
               blob={phase.blob}
               objectUrl={phase.objectUrl}
+              hint={phase.hint}
               onDone={(p) =>
                 handleAnalyzed(phase.blob, phase.objectUrl, p)
               }
@@ -214,6 +226,7 @@ function PhotoFoodModalBody({ onClose }: { onClose: () => void }) {
                   kind: "upload-error",
                   blob: phase.blob,
                   objectUrl: phase.objectUrl,
+                  hint: phase.hint,
                   message,
                 })
               }
@@ -228,6 +241,7 @@ function PhotoFoodModalBody({ onClose }: { onClose: () => void }) {
                   kind: "processing",
                   blob: phase.blob,
                   objectUrl: phase.objectUrl,
+                  hint: phase.hint,
                 })
               }
               onManual={onClose}
@@ -367,10 +381,14 @@ function CaptureScreen({
 
 function PreviewScreen({
   objectUrl,
+  hint,
+  onHintChange,
   onRetake,
   onAnalyze,
 }: {
   objectUrl: string;
+  hint: string;
+  onHintChange: (v: string) => void;
   onRetake: () => void;
   onAnalyze: () => void;
 }) {
@@ -381,9 +399,24 @@ function PreviewScreen({
         <img
           src={objectUrl}
           alt="Preview"
-          className="max-h-[60vh] w-full object-contain rounded-xl bg-[var(--color-elevated)]"
+          className="max-h-[50vh] w-full object-contain rounded-xl bg-[var(--color-elevated)]"
         />
       </div>
+
+      <div className="mt-4">
+        <div className="label mb-2">Notes (optional)</div>
+        <Textarea
+          value={hint}
+          onChange={(e) => onHintChange(e.target.value)}
+          rows={2}
+          placeholder="e.g. 8oz Chick-fil-A grilled chicken sandwich, 1 cup white rice, 30g Optimum Nutrition whey"
+        />
+        <div className="mt-1 text-[11px] text-[var(--color-fg-3)] leading-snug">
+          Ounces, brand names, prep details — anything that helps the AI
+          guess more accurately than the photo alone.
+        </div>
+      </div>
+
       <div className="mt-4 flex items-center justify-end gap-2">
         <Button variant="secondary" onClick={onRetake}>
           <Camera size={14} />
@@ -409,11 +442,13 @@ const STATUS_STEPS = [
 function ProcessingScreen({
   blob,
   objectUrl,
+  hint,
   onDone,
   onError,
 }: {
   blob: Blob;
   objectUrl: string;
+  hint: string;
   onDone: (p: FoodPhotoPayload) => void;
   onError: (message: string) => void;
 }) {
@@ -434,6 +469,7 @@ function ProcessingScreen({
       try {
         const form = new FormData();
         form.append("image", blob, "meal.jpg");
+        if (hint.trim()) form.append("hint", hint.trim());
         const res = await fetch("/api/food-photo", {
           method: "POST",
           body: form,
@@ -453,7 +489,7 @@ function ProcessingScreen({
         onError(err instanceof Error ? err.message : "Network error.");
       }
     })();
-  }, [blob, onDone, onError]);
+  }, [blob, hint, onDone, onError]);
 
   return (
     <div className="h-full flex flex-col items-center justify-center px-6 text-center">
