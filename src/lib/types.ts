@@ -460,14 +460,14 @@ export type Settings = {
 };
 
 export const DEFAULT_MORNING_ROUTINE: Array<{ name: string; icon: string }> = [
-  { name: "Make the bed", icon: "🛏️" },
-  { name: "No phone for first 30 min", icon: "📵" },
-  { name: "Morning sunlight — 10 min", icon: "☀️" },
-  { name: "No coffee for first 30 min", icon: "☕" },
-  { name: "Morning stretches — 5 min", icon: "🧘" },
-  { name: "Creatine 10g", icon: "💊" },
-  { name: "Vitamins", icon: "💊" },
-  { name: "Set top 3 priorities for today", icon: "🎯" },
+  { name: "Make the bed", icon: "" },
+  { name: "No phone for first 30 min", icon: "" },
+  { name: "Morning sunlight — 10 min", icon: "" },
+  { name: "No coffee for first 30 min", icon: "" },
+  { name: "Morning stretches — 5 min", icon: "" },
+  { name: "Creatine 10g", icon: "" },
+  { name: "Vitamins", icon: "" },
+  { name: "Set top 3 priorities for today", icon: "" },
 ];
 
 export const DEFAULT_MORNING_ROUTINE_SETTINGS: MorningRoutineSettings = {

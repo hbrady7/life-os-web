@@ -302,9 +302,11 @@ function RoutineRow({
       >
         <GripVertical size={16} />
       </button>
-      <span className="text-[22px] leading-none shrink-0 select-none">
-        {item.icon}
-      </span>
+      {item.icon && (
+        <span className="text-[22px] leading-none shrink-0 select-none">
+          {item.icon}
+        </span>
+      )}
       <button
         type="button"
         onPointerDown={startPress}

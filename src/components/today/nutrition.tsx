@@ -21,7 +21,6 @@ import { haptic } from "@/lib/haptics";
 
 export function Nutrition() {
   const today = todayStr();
-  const showOnToday = useStore((s) => s.settings.showNutritionOnToday);
   const targets = useStore((s) => s.settings.nutrition);
   const meals = useMealsForDay(today);
   // surface most-used favorites first; tap-count bumps automatically
@@ -32,11 +31,11 @@ export function Nutrition() {
   const logSavedMeal = useStore((s) => s.logSavedMeal);
   const addSavedMeal = useStore((s) => s.addSavedMeal);
   const removeSavedMeal = useStore((s) => s.removeSavedMeal);
+  const setNutritionTargets = useStore((s) => s.setNutritionTargets);
 
   const [open, setOpen] = React.useState(false);
   const [editing, setEditing] = React.useState<Meal | null>(null);
-
-  if (!showOnToday || !targets.enabled) return null;
+  const [targetsOpen, setTargetsOpen] = React.useState(false);
 
   const totals = computeTotalsForDay(meals);
 
@@ -44,11 +43,33 @@ export function Nutrition() {
     <Card>
       <CardHeader>
         <CardTitle>Nutrition</CardTitle>
-        <Button size="sm" variant="soft" onClick={() => setOpen(true)}>
-          <Plus size={12} />
-          Log meal
-        </Button>
+        <div className="flex items-center gap-1.5">
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => setTargetsOpen(true)}
+            title="Set macro targets"
+          >
+            Targets
+          </Button>
+          <Button size="sm" variant="soft" onClick={() => setOpen(true)}>
+            <Plus size={12} />
+            Log meal
+          </Button>
+        </div>
       </CardHeader>
+
+      {!targets.enabled && (
+        <div className="mb-3 px-3 py-2.5 rounded-xl border border-dashed border-[var(--color-stroke-strong)] flex items-center justify-between gap-3">
+          <div className="text-[11px] text-[var(--color-fg-3)] leading-snug">
+            Logging meals works without targets — but adding them gives you
+            progress bars and adherence stats.
+          </div>
+          <Button size="sm" variant="secondary" onClick={() => setTargetsOpen(true)}>
+            Set targets
+          </Button>
+        </div>
+      )}
 
       <div className="grid grid-cols-4 gap-2">
         <Macro
@@ -173,7 +194,142 @@ export function Nutrition() {
           setEditing(null);
         }}
       />
+      <TargetsModal
+        open={targetsOpen}
+        onClose={() => setTargetsOpen(false)}
+        targets={targets}
+        onSave={(patch) => {
+          setNutritionTargets(patch);
+          setTargetsOpen(false);
+          haptic("success");
+        }}
+      />
     </Card>
+  );
+}
+
+function TargetsModal({
+  open,
+  onClose,
+  targets,
+  onSave,
+}: {
+  open: boolean;
+  onClose: () => void;
+  targets: NutritionTargets;
+  onSave: (patch: Partial<NutritionTargets>) => void;
+}) {
+  const [enabled, setEnabled] = React.useState(targets.enabled);
+  const [cal, setCal] = React.useState(
+    targets.calories != null ? String(targets.calories) : ""
+  );
+  const [protein, setProtein] = React.useState(
+    targets.protein != null ? String(targets.protein) : ""
+  );
+  const [carbs, setCarbs] = React.useState(
+    targets.carbs != null ? String(targets.carbs) : ""
+  );
+  const [fat, setFat] = React.useState(
+    targets.fat != null ? String(targets.fat) : ""
+  );
+
+  React.useEffect(() => {
+    if (open) {
+      setEnabled(targets.enabled);
+      setCal(targets.calories != null ? String(targets.calories) : "");
+      setProtein(targets.protein != null ? String(targets.protein) : "");
+      setCarbs(targets.carbs != null ? String(targets.carbs) : "");
+      setFat(targets.fat != null ? String(targets.fat) : "");
+    }
+  }, [open, targets]);
+
+  const toNum = (s: string) => {
+    const n = parseInt(s, 10);
+    return Number.isFinite(n) ? n : undefined;
+  };
+
+  return (
+    <Modal
+      open={open}
+      onClose={onClose}
+      title="Macro targets"
+      description="Daily numbers used for the progress bars + adherence stats."
+      size="md"
+      footer={
+        <div className="flex items-center justify-end gap-2">
+          <Button variant="ghost" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button
+            onClick={() =>
+              onSave({
+                enabled: enabled || !!(toNum(cal) || toNum(protein)),
+                calories: toNum(cal),
+                protein: toNum(protein),
+                carbs: toNum(carbs),
+                fat: toNum(fat),
+              })
+            }
+          >
+            Save
+          </Button>
+        </div>
+      }
+    >
+      <div className="space-y-3">
+        <div>
+          <div className="label mb-2">Calories</div>
+          <Input
+            type="number"
+            inputMode="numeric"
+            value={cal}
+            onChange={(e) => setCal(e.target.value)}
+            placeholder="2200"
+          />
+        </div>
+        <div className="grid grid-cols-3 gap-3">
+          <div>
+            <div className="label mb-2 text-[9px]">Protein (g)</div>
+            <Input
+              type="number"
+              inputMode="numeric"
+              value={protein}
+              onChange={(e) => setProtein(e.target.value)}
+              placeholder="180"
+            />
+          </div>
+          <div>
+            <div className="label mb-2 text-[9px]">Carbs (g)</div>
+            <Input
+              type="number"
+              inputMode="numeric"
+              value={carbs}
+              onChange={(e) => setCarbs(e.target.value)}
+              placeholder="—"
+            />
+          </div>
+          <div>
+            <div className="label mb-2 text-[9px]">Fat (g)</div>
+            <Input
+              type="number"
+              inputMode="numeric"
+              value={fat}
+              onChange={(e) => setFat(e.target.value)}
+              placeholder="—"
+            />
+          </div>
+        </div>
+        <label className="flex items-center gap-2 text-xs text-[var(--color-fg-2)] cursor-pointer">
+          <input
+            type="checkbox"
+            checked={enabled}
+            onChange={(e) => setEnabled(e.target.checked)}
+            className="h-3.5 w-3.5 accent-[var(--color-accent-strong)]"
+          />
+          Show progress bars (auto-on once any target is set)
+        </label>
+      </div>
+    </Modal>
   );
 }
 
