@@ -31,6 +31,27 @@ import { round1 } from "@/lib/utils";
 const tickStyle = { fill: "var(--color-fg-3)", fontSize: 10 };
 const gridStroke = "var(--color-stroke)";
 
+/**
+ * Recharts can't read CSS custom properties from SVG attributes — these
+ * mirror the values in src/app/globals.css under the metric color system.
+ * Keep them in sync.
+ */
+const CHART = {
+  calories: "#F59E0B",
+  protein: "#A78BFA",
+  proteinLight: "#C4B5FD",
+  carbs: "#38BDF8",
+  fat: "#10B981",
+  water: "#22D3EE",
+  sleep: "#818CF8",
+  sleepLight: "#A5B4FC",
+  mood: "#10B981", // mood-high
+  energyHigh: "#FB923C",
+  energyBase: "#F59E0B",
+  weight: "#94A3B8",
+  steps: "#84CC16",
+};
+
 function TooltipBox({ active, payload, label }: any) {
   if (!active || !payload?.length) return null;
   return (
@@ -78,19 +99,24 @@ export function MoodEnergyChart({ days }: { days: number }) {
               type="monotone"
               dataKey="mood"
               name="Mood"
-              stroke="#A78BFA"
+              stroke={CHART.mood}
               strokeWidth={2}
               dot={false}
               connectNulls
+              animationDuration={420}
+              animationEasing="ease-out"
             />
             <Line
               type="monotone"
               dataKey="energy"
               name="Energy"
-              stroke="#FBBF24"
+              stroke={CHART.energyHigh}
               strokeWidth={2}
               dot={false}
               connectNulls
+              animationDuration={420}
+              animationBegin={120}
+              animationEasing="ease-out"
             />
           </LineChart>
         </ResponsiveContainer>
@@ -132,8 +158,8 @@ export function SleepChart({ days }: { days: number }) {
           <AreaChart data={series} margin={{ top: 5, right: 6, left: 0, bottom: 0 }}>
             <defs>
               <linearGradient id="sleepGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#A78BFA" stopOpacity={0.4} />
-                <stop offset="100%" stopColor="#A78BFA" stopOpacity={0} />
+                <stop offset="0%" stopColor={CHART.sleep} stopOpacity={0.42} />
+                <stop offset="100%" stopColor={CHART.sleep} stopOpacity={0} />
               </linearGradient>
             </defs>
             <CartesianGrid stroke={gridStroke} strokeDasharray="3 4" />
@@ -144,10 +170,12 @@ export function SleepChart({ days }: { days: number }) {
               type="monotone"
               dataKey="hours"
               name="Sleep"
-              stroke="#A78BFA"
+              stroke={CHART.sleep}
               fill="url(#sleepGrad)"
               strokeWidth={2}
               connectNulls
+              animationDuration={420}
+              animationEasing="ease-out"
             />
           </AreaChart>
         </ResponsiveContainer>
@@ -195,19 +223,25 @@ export function WeightChart({ days }: { days: number }) {
               type="monotone"
               dataKey="weight"
               name="Weight"
-              stroke="#8E8E93"
+              stroke={CHART.weight}
               strokeWidth={1.5}
+              strokeOpacity={0.6}
               dot={false}
               connectNulls
+              animationDuration={420}
+              animationEasing="ease-out"
             />
             <Line
               type="monotone"
               dataKey="ma"
               name="7-day avg"
-              stroke="#A78BFA"
+              stroke={CHART.weight}
               strokeWidth={2.5}
               dot={false}
               connectNulls
+              animationDuration={420}
+              animationBegin={120}
+              animationEasing="ease-out"
             />
           </LineChart>
         </ResponsiveContainer>
@@ -330,7 +364,13 @@ export function HabitRatesBars({ days }: { days: number }) {
                 stroke={gridStroke}
               />
               <Tooltip content={<TooltipBox />} />
-              <Bar dataKey="pct" fill="#A78BFA" radius={[0, 6, 6, 0]} />
+              <Bar
+                dataKey="pct"
+                fill={CHART.protein}
+                radius={[0, 6, 6, 0]}
+                animationDuration={420}
+                animationEasing="ease-out"
+              />
             </BarChart>
           </ResponsiveContainer>
         </div>

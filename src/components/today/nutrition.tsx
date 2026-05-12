@@ -21,6 +21,8 @@ import { cn } from "@/lib/utils";
 import { haptic } from "@/lib/haptics";
 import { PhotoFoodModal } from "./photo-food-modal";
 import { getMealPhoto } from "@/lib/meal-photo-store";
+import { metricColors } from "@/lib/metric-colors";
+import { MetricBar } from "@/components/ui/metric-bar";
 
 export function Nutrition() {
   const today = todayStr();
@@ -119,32 +121,32 @@ export function Nutrition() {
 
       <div className="grid grid-cols-4 gap-2">
         <Macro
+          metric="calories"
           label="Cal"
           value={totals.calories}
           target={targets.calories}
           unit=""
-          highlight={false}
         />
         <Macro
+          metric="protein"
           label="Protein"
           value={totals.protein}
           target={targets.protein}
           unit="g"
-          highlight
         />
         <Macro
+          metric="carbs"
           label="Carbs"
           value={totals.carbs}
           target={targets.carbs}
           unit="g"
-          highlight={false}
         />
         <Macro
+          metric="fat"
           label="Fat"
           value={totals.fat}
           target={targets.fat}
           unit="g"
-          highlight={false}
         />
       </div>
 
@@ -398,28 +400,38 @@ function TargetsModal({
 }
 
 function Macro({
+  metric,
   label,
   value,
   target,
   unit,
-  highlight,
 }: {
+  metric: import("@/lib/metric-colors").Metric;
   label: string;
   value: number;
   target?: number;
   unit: string;
-  highlight: boolean;
 }) {
-  const pct = target ? Math.min(1, value / target) : 0;
+  const c = metricColors(metric);
+  const pct = target ? value / target : 0;
   return (
-    <div className="rounded-xl border border-[var(--color-stroke)] bg-[var(--color-elevated)] p-2">
-      <div className="label text-[9px]">{label}</div>
+    <div
+      className="rounded-xl border p-2"
+      style={{
+        background: c.soft,
+        borderColor: `color-mix(in srgb, ${c.base} 26%, transparent)`,
+      }}
+    >
+      <div
+        className="label text-[9px]"
+        style={{ color: c.base, opacity: 0.85 }}
+      >
+        {label}
+      </div>
       <div className="mt-1 flex items-baseline gap-0.5">
         <span
-          className={cn(
-            "text-base font-semibold tnum",
-            highlight ? "text-[var(--color-accent)]" : ""
-          )}
+          className="text-base font-semibold tnum"
+          style={{ color: c.base }}
         >
           {Math.round(value)}
         </span>
@@ -430,19 +442,7 @@ function Macro({
           </span>
         )}
       </div>
-      <div className="mt-1.5 h-1 rounded-full bg-[var(--color-card)] overflow-hidden">
-        <motion.div
-          className={cn(
-            "h-full",
-            highlight
-              ? "bg-[var(--color-accent)]"
-              : "bg-[var(--color-fg-2)]/40"
-          )}
-          initial={{ width: 0 }}
-          animate={{ width: `${pct * 100}%` }}
-          transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
-        />
-      </div>
+      <MetricBar metric={metric} value={pct} height={8} className="mt-1.5" />
     </div>
   );
 }

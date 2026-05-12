@@ -2,7 +2,8 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { Plus, Flame } from "lucide-react";
+import { Plus } from "lucide-react";
+import { StreakBadge } from "@/components/ui/streak-badge";
 import { useStore } from "@/store";
 import { useHabits, useToday } from "@/store/selectors";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
@@ -97,12 +98,7 @@ function HabitTile({
         >
           <HabitGlyph name={habit.icon} size={14} />
         </div>
-        {streak >= 3 && (
-          <div className="flex items-center gap-0.5 text-[10px] font-semibold text-[var(--color-warning)] tnum">
-            <Flame size={11} fill="currentColor" />
-            {streak}
-          </div>
-        )}
+        <StreakBadge streak={streak} size={11} className="text-[10px]" />
       </div>
       <div className="mt-2 text-[11px] font-medium text-[var(--color-fg)] line-clamp-2 leading-tight">
         {habit.name}

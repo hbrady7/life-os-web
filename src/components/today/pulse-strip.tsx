@@ -7,15 +7,15 @@ import { Sparkline } from "@/components/sparkline";
 import { useStore } from "@/store";
 import { cn, round1 } from "@/lib/utils";
 import { haptic } from "@/lib/haptics";
+import { metricColors, type Metric as MetricKey } from "@/lib/metric-colors";
+import { MetricBar } from "@/components/ui/metric-bar";
 import { SleepLogModal } from "./log-modals/sleep-modal";
 import { MoodLogModal } from "./log-modals/mood-modal";
-import { EnergyLogModal } from "./log-modals/energy-modal";
 import { WaterLogModal } from "./log-modals/water-modal";
 import { WeightLogModal } from "./log-modals/weight-modal";
 import { StepsLogModal } from "./log-modals/steps-modal";
-import { EnergyTile } from "./energy-tile";
 
-type Metric = "sleep" | "mood" | "energy" | "water" | "weight" | "steps";
+type Metric = "sleep" | "mood" | "water" | "weight" | "steps";
 
 export function PulseStrip() {
   const today = todayStr();
@@ -28,7 +28,7 @@ export function PulseStrip() {
 
   const [open, setOpen] = React.useState<Metric | null>(null);
 
-  const get = (m: Exclude<Metric, "energy">, date: string): number | null => {
+  const get = (m: Metric, date: string): number | null => {
     const h = health[date];
     if (!h) return null;
     switch (m) {
@@ -45,11 +45,10 @@ export function PulseStrip() {
     }
   };
 
-  const sparkValues = (m: Exclude<Metric, "energy">) =>
-    dates.map((d) => get(m, d));
+  const sparkValues = (m: Metric) => dates.map((d) => get(m, d));
 
   const tile = (
-    m: Exclude<Metric, "energy">,
+    m: Metric,
     label: string,
     Icon: typeof Moon,
     value: React.ReactNode,
@@ -57,6 +56,7 @@ export function PulseStrip() {
   ) => {
     const todayVal = get(m, today);
     const logged = todayVal != null;
+    const c = metricColors(m as MetricKey);
     return (
       <button
         type="button"
@@ -65,32 +65,38 @@ export function PulseStrip() {
           haptic("tap");
           setOpen(m);
         }}
-        className={cn(
-          "snap-start shrink-0 w-[148px] card-hover card p-3 text-left",
+        className="snap-start shrink-0 w-[148px] card-hover card p-3 text-left"
+        style={
           logged
-            ? "border-[color:color-mix(in_srgb,var(--color-accent)_22%,transparent)]"
-            : ""
-        )}
+            ? {
+                borderColor: `color-mix(in srgb, ${c.base} 28%, transparent)`,
+              }
+            : undefined
+        }
       >
         <div className="flex items-center justify-between">
           <div
-            className={cn(
-              "h-7 w-7 grid place-items-center rounded-lg",
+            className="h-7 w-7 grid place-items-center rounded-lg"
+            style={
               logged
-                ? "bg-[var(--color-accent-soft)] text-[var(--color-accent)]"
-                : "bg-[var(--color-elevated)] text-[var(--color-fg-3)]"
-            )}
+                ? { background: c.soft, color: c.base }
+                : {
+                    background: "var(--color-elevated)",
+                    color: "var(--color-fg-3)",
+                  }
+            }
           >
             <Icon size={15} />
           </div>
-          <Sparkline values={sparkValues(m)} />
+          <Sparkline values={sparkValues(m)} color={c.base} />
         </div>
         <div className="mt-2 label text-[10px]">{label}</div>
         <div
           className={cn(
             "text-[18px] font-semibold tnum mt-0.5 leading-none",
-            logged ? "text-[var(--color-fg)]" : "text-[var(--color-fg-3)]"
+            logged ? "" : "text-[var(--color-fg-3)]"
           )}
+          style={logged ? { color: c.base } : undefined}
         >
           {value}
         </div>
@@ -131,7 +137,6 @@ export function PulseStrip() {
           Smile,
           todayHealth?.mood != null ? `${todayHealth.mood}/10` : "—"
         )}
-        <EnergyTile onTap={() => setOpen("energy")} />
         {tile(
           "water",
           "Water",
@@ -142,12 +147,12 @@ export function PulseStrip() {
               : `${todayHealth.waterOz}oz`
             : "—",
           <span className="flex items-center gap-1.5">
-            <span className="flex-1 h-1 rounded-full bg-[var(--color-elevated)] overflow-hidden">
-              <span
-                className="block h-full bg-[var(--color-accent)]"
-                style={{ width: `${waterPct * 100}%` }}
-              />
-            </span>
+            <MetricBar
+              metric="water"
+              value={waterPct}
+              height={4}
+              className="flex-1"
+            />
             <span className="tnum">
               {liquidUnit === "ml"
                 ? `${Math.round(waterTarget * 29.5735)}ml`
@@ -177,7 +182,6 @@ export function PulseStrip() {
 
       <SleepLogModal open={open === "sleep"} onClose={() => setOpen(null)} />
       <MoodLogModal open={open === "mood"} onClose={() => setOpen(null)} />
-      <EnergyLogModal open={open === "energy"} onClose={() => setOpen(null)} />
       <WaterLogModal open={open === "water"} onClose={() => setOpen(null)} />
       <WeightLogModal open={open === "weight"} onClose={() => setOpen(null)} />
       <StepsLogModal open={open === "steps"} onClose={() => setOpen(null)} />

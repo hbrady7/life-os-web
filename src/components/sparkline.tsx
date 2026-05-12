@@ -8,6 +8,8 @@ type Props = {
   height?: number;
   color?: string;
   fill?: boolean;
+  /** Show a filled dot on the last data point. */
+  endDot?: boolean;
 };
 
 export function Sparkline({
@@ -16,6 +18,7 @@ export function Sparkline({
   height = 22,
   color = "var(--color-accent)",
   fill = true,
+  endDot = true,
 }: Props) {
   const points = React.useMemo(() => {
     const cleaned = values.map((v) =>
@@ -68,10 +71,44 @@ export function Sparkline({
   }
   area += ` L ${width},${height} Z`;
 
+  // Find the last non-null point for the end dot
+  let lastPoint: { x: number; y: number } | null = null;
+  for (let i = points.length - 1; i >= 0; i--) {
+    const p = points[i];
+    if (p) {
+      lastPoint = p;
+      break;
+    }
+  }
+
+  const gradId = React.useId();
+
   return (
-    <svg width={width} height={height} aria-hidden>
-      {fill && <path d={area} fill={color} opacity={0.18} />}
-      <path d={path} stroke={color} strokeWidth={1.4} fill="none" />
+    <svg
+      width={width}
+      height={height}
+      aria-hidden
+      className="overflow-visible"
+    >
+      <defs>
+        <linearGradient id={gradId} x1="0" x2="0" y1="0" y2="1">
+          <stop offset="0%" stopColor={color} stopOpacity={0.38} />
+          <stop offset="100%" stopColor={color} stopOpacity={0} />
+        </linearGradient>
+      </defs>
+      {fill && <path d={area} fill={`url(#${gradId})`} />}
+      <path
+        d={path}
+        stroke={color}
+        strokeWidth={1.6}
+        fill="none"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        style={{ filter: `drop-shadow(0 0 4px ${color}40)` }}
+      />
+      {endDot && lastPoint && (
+        <circle cx={lastPoint.x} cy={lastPoint.y} r={2.4} fill={color} />
+      )}
     </svg>
   );
 }

@@ -19,7 +19,8 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { GripVertical, Plus, Flame, ChevronDown, Sunrise } from "lucide-react";
+import { GripVertical, Plus, ChevronDown, Sunrise } from "lucide-react";
+import { StreakBadge } from "@/components/ui/streak-badge";
 
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -130,9 +131,12 @@ export function MorningRoutine() {
               </span>
             )}
             {settings.showStreak && streak >= 1 && (
-              <span className="text-[var(--color-warning)] text-xs tnum inline-flex items-center gap-0.5">
-                · {streak} day{streak === 1 ? "" : "s"}
-                <Flame size={11} fill="currentColor" />
+              <span className="inline-flex items-center gap-1 text-xs">
+                <span className="text-[var(--color-fg-3)]">·</span>
+                <StreakBadge streak={streak} alwaysShow size={11} />
+                <span className="text-[var(--color-fg-3)] font-normal">
+                  day{streak === 1 ? "" : "s"}
+                </span>
               </span>
             )}
           </div>
@@ -159,12 +163,7 @@ export function MorningRoutine() {
           <span className="text-xs text-[var(--color-fg-2)] tnum">
             {done} of {total}
           </span>
-          {settings.showStreak && streak >= 3 && (
-            <span className="text-xs font-semibold text-[var(--color-warning)] tnum inline-flex items-center gap-0.5">
-              <Flame size={11} fill="currentColor" />
-              {streak}
-            </span>
-          )}
+          {settings.showStreak && <StreakBadge streak={streak} size={11} />}
         </div>
       </CardHeader>
 

@@ -24,6 +24,59 @@
   --color-p2: #FBBF24;
   --color-p3: #60A5FA;
 
+  /* ------ Metric color system ------
+   * Base = mid-saturation hue used for fills + line strokes.
+   * Light = brighter sibling for gradients (fill highlight).
+   * Soft = ~12% opacity of base — used as the empty track tint so even
+   *        an empty progress bar hints at color instead of dead gray.
+   */
+  --mc-calories: #F59E0B;       /* amber — warm, energy */
+  --mc-calories-2: #FBBF24;
+  --mc-calories-soft: rgba(245, 158, 11, 0.14);
+
+  --mc-protein: #A78BFA;        /* matches existing accent violet */
+  --mc-protein-2: #C4B5FD;
+  --mc-protein-soft: rgba(167, 139, 250, 0.14);
+
+  --mc-carbs: #38BDF8;          /* sky */
+  --mc-carbs-2: #7DD3FC;
+  --mc-carbs-soft: rgba(56, 189, 248, 0.14);
+
+  --mc-fat: #10B981;            /* emerald */
+  --mc-fat-2: #34D399;
+  --mc-fat-soft: rgba(16, 185, 129, 0.14);
+
+  --mc-water: #22D3EE;          /* cyan */
+  --mc-water-2: #67E8F9;
+  --mc-water-soft: rgba(34, 211, 238, 0.14);
+
+  --mc-sleep: #818CF8;          /* indigo */
+  --mc-sleep-2: #A5B4FC;
+  --mc-sleep-soft: rgba(129, 140, 248, 0.14);
+
+  --mc-mood-low: #F43F5E;       /* rose */
+  --mc-mood-high: #10B981;      /* emerald — gradient end */
+  --mc-mood: #F43F5E;           /* single-color fallback */
+  --mc-mood-soft: rgba(244, 63, 94, 0.12);
+
+  --mc-energy-low: #F59E0B;     /* amber */
+  --mc-energy-high: #FB923C;    /* orange — gradient end */
+  --mc-energy: #F59E0B;
+  --mc-energy-soft: rgba(245, 158, 11, 0.12);
+
+  --mc-weight: #94A3B8;         /* slate — neutral */
+  --mc-weight-2: #CBD5E1;
+  --mc-weight-soft: rgba(148, 163, 184, 0.14);
+
+  --mc-steps: #84CC16;          /* lime */
+  --mc-steps-2: #A3E635;
+  --mc-steps-soft: rgba(132, 204, 22, 0.14);
+
+  /* Streak tier colors */
+  --streak-amber: #F59E0B;
+  --streak-orange: #FB923C;
+  --streak-gold: #FCD34D;
+
   --radius-card: 1.25rem;
   --radius-control: 0.75rem;
   --radius-pill: 9999px;

@@ -1,6 +1,6 @@
 "use client";
 
-import { Flame } from "lucide-react";
+import { StreakBadge } from "@/components/ui/streak-badge";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { useHabits } from "@/store/selectors";
 import { todayStr } from "@/lib/date";
@@ -38,10 +38,7 @@ export function StreakLeaderboard() {
                 <HabitGlyph name={h.icon} size={14} />
               </div>
               <span className="flex-1 text-sm">{h.name}</span>
-              <span className="flex items-center gap-1 text-xs font-semibold tnum text-[var(--color-warning)]">
-                <Flame size={12} fill="currentColor" />
-                {streak}
-              </span>
+              <StreakBadge streak={streak} alwaysShow size={12} />
             </li>
           ))}
         </ul>

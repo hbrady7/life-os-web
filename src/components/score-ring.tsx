@@ -21,18 +21,36 @@ export function ScoreRing({
   const v = Math.max(0, Math.min(1, value));
   const offset = c * (1 - v);
   const pct = Math.round(v * 100);
+  const atFull = v >= 1;
+  const dim = v < 0.3;
 
   return (
     <div
       role="img"
       aria-label={`Day score ${pct}%`}
       className="relative shrink-0"
-      style={{ width: size, height: size }}
+      style={{
+        width: size,
+        height: size,
+        opacity: dim ? 0.55 : 1,
+        transition: "opacity 280ms ease",
+      }}
     >
-      <svg width={size} height={size} className="-rotate-90">
+      <svg
+        width={size}
+        height={size}
+        className="-rotate-90"
+        style={{
+          filter: atFull
+            ? "drop-shadow(0 0 10px color-mix(in srgb, var(--color-accent) 60%, transparent))"
+            : "none",
+          transition: "filter 320ms ease",
+        }}
+      >
         <defs>
           <linearGradient id="ring-grad" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0%" stopColor="#A78BFA" />
+            <stop offset="0%" stopColor="var(--color-accent)" />
+            <stop offset="55%" stopColor="var(--color-accent-strong)" />
             <stop offset="100%" stopColor="#6366F1" />
           </linearGradient>
         </defs>
@@ -43,7 +61,7 @@ export function ScoreRing({
           stroke="var(--color-stroke-strong)"
           strokeWidth={stroke}
           fill="none"
-          opacity={0.7}
+          opacity={0.55}
         />
         <circle
           cx={size / 2}
