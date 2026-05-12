@@ -1,5 +1,6 @@
 "use client";
 
+import * as React from "react";
 import { useShallow } from "zustand/react/shallow";
 import { lastNDates, todayStr } from "@/lib/date";
 import {
@@ -596,20 +597,20 @@ export function useUnifiedGymSessions(): Array<{
   workout?: Workout;
   liftSession?: LiftSession;
 }> {
-  return useStore(
-    useShallow((s) => {
-      const dates = new Set<DateStr>();
-      for (const l of s.liftSessions) dates.add(l.date);
-      for (const w of s.workouts) dates.add(w.date);
-      return [...dates]
-        .sort((a, b) => b.localeCompare(a))
-        .map((date) => ({
-          date,
-          workout: s.workouts.find((w) => w.date === date),
-          liftSession: s.liftSessions.find((l) => l.date === date),
-        }));
-    })
-  );
+  const liftSessions = useStore((s) => s.liftSessions);
+  const workouts = useStore((s) => s.workouts);
+  return React.useMemo(() => {
+    const dates = new Set<DateStr>();
+    for (const l of liftSessions) dates.add(l.date);
+    for (const w of workouts) dates.add(w.date);
+    return [...dates]
+      .sort((a, b) => b.localeCompare(a))
+      .map((date) => ({
+        date,
+        workout: workouts.find((w) => w.date === date),
+        liftSession: liftSessions.find((l) => l.date === date),
+      }));
+  }, [liftSessions, workouts]);
 }
 
 export function getOverseerContext() {
