@@ -17,62 +17,45 @@ type ScoreInputs = {
   goalsForDay: Goal[];
   habits: Habit[];
   routine: MorningRoutineItem[];
+  /** Accepted but ignored — evening routine no longer counts. */
   evening?: EveningRoutineItem[];
+  /** Accepted but ignored — health/sleep no longer counts. */
   health?: HealthLog;
-  journalsForDay: JournalEntry[];
+  /** Accepted but ignored — journaling no longer counts. */
+  journalsForDay?: JournalEntry[];
   date: DateStr;
 };
 
 /**
  * Compute a 0..1 score for a given day.
- * weights: goals 30%, habits 20%, morning routine 20%,
- *          evening routine 20%, journaled 5%, sleep logged 5%
  *
- * Pre-evening-routine codepaths pass `evening` as undefined; we drop
- * its 20% and proportionally rescale so the legacy score still sums
- * to 100%.
+ * Every checkbox is worth the same. A "checkbox" is one goal, one habit,
+ * or one morning-routine item — counted as one slot in both the numerator
+ * (when completed) and the denominator (always).
+ *
+ * Evening routine, journaled flag, and sleep-logged flag are intentionally
+ * excluded — they aren't checkboxes the user actively ticks during the day.
  */
 export function dayScore({
   goalsForDay,
   habits,
   routine,
-  evening,
-  health,
-  journalsForDay,
   date,
 }: ScoreInputs): number {
-  const goalsPart = goalsForDay.length
-    ? goalsForDay.filter((g) => g.completed).length / goalsForDay.length
-    : 0;
+  let total = 0;
+  let done = 0;
 
-  const activeHabits = habits.length;
-  const doneHabits = activeHabits
-    ? habits.filter((h) => h.history[date]).length / activeHabits
-    : 0;
+  total += goalsForDay.length;
+  done += goalsForDay.filter((g) => g.completed).length;
 
-  const totalRoutine = routine.length;
-  const doneRoutine = totalRoutine
-    ? routine.filter((r) => r.history[date]?.completed).length / totalRoutine
-    : 0;
+  total += habits.length;
+  done += habits.filter((h) => h.history[date]).length;
 
-  const totalEvening = evening?.length ?? 0;
-  const doneEvening = totalEvening
-    ? (evening ?? []).filter((r) => r.history[date]?.completed).length /
-      totalEvening
-    : 0;
+  total += routine.length;
+  done += routine.filter((r) => r.history[date]?.completed).length;
 
-  const journaled = journalsForDay.length > 0 ? 1 : 0;
-  const sleepLogged = health?.sleepHours ? 1 : 0;
-
-  const score =
-    goalsPart * 0.3 +
-    doneHabits * 0.2 +
-    doneRoutine * 0.2 +
-    doneEvening * 0.2 +
-    journaled * 0.05 +
-    sleepLogged * 0.05;
-
-  return Math.max(0, Math.min(1, score));
+  if (total === 0) return 0;
+  return Math.max(0, Math.min(1, done / total));
 }
 
 export function routineStreak(

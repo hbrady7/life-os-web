@@ -33,6 +33,7 @@ export type RecurrencePattern =
   | "weekdays"
   | "weekends"
   | "weekly"
+  | "weekly_count"
   | "biweekly"
   | "monthly"
   | "custom";
@@ -53,6 +54,8 @@ export type RecurringGoal = {
   monthlyLastDay?: boolean;
   /** Used for custom — every N days from startDate. N >= 1. */
   intervalDays?: number;
+  /** Used for weekly_count — target completions per calendar week. N >= 1. */
+  weeklyTimes?: number;
   startDate: DateStr;
   active: boolean;
   createdAt: string;
@@ -72,10 +75,11 @@ export const RECURRENCE_PATTERN_LABELS: Record<RecurrencePattern, string> = {
   daily: "Daily",
   weekdays: "Weekdays",
   weekends: "Weekends",
-  weekly: "Weekly",
+  weekly: "Weekly · pick days",
+  weekly_count: "Weekly · X times",
   biweekly: "Biweekly",
   monthly: "Monthly",
-  custom: "Custom",
+  custom: "Every N days",
 };
 
 export const RECURRENCE_PATTERNS: RecurrencePattern[] = [
@@ -83,6 +87,7 @@ export const RECURRENCE_PATTERNS: RecurrencePattern[] = [
   "weekdays",
   "weekends",
   "weekly",
+  "weekly_count",
   "biweekly",
   "monthly",
   "custom",

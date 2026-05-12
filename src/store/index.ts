@@ -3,7 +3,7 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import { todayStr } from "@/lib/date";
-import { shouldGenerateForDate } from "@/lib/recurrence";
+import { shouldGenerateForDate, weekRangeFor } from "@/lib/recurrence";
 import { uid } from "@/lib/utils";
 import {
   DEFAULT_DAY_TYPES,
@@ -884,6 +884,7 @@ export const useStore = create<State & Actions>()(
           for (const g of s.recurringGenerations) {
             genByKey.set(`${g.recurringGoalId}:${g.date}`, g);
           }
+          const goalById = new Map(s.goals.map((g) => [g.id, g]));
 
           const newGoals: Goal[] = [];
           const newGenerations: RecurringGoalGeneration[] = [];
@@ -895,6 +896,21 @@ export const useStore = create<State & Actions>()(
             if (!shouldGenerateForDate(rg, date)) continue;
             const key = `${rg.id}:${date}`;
             if (genByKey.has(key)) continue;
+
+            // weekly_count: only generate if completed count this week < target
+            if (rg.pattern === "weekly_count") {
+              const target = rg.weeklyTimes ?? 1;
+              const [weekStart, weekEnd] = weekRangeFor(date);
+              let completedThisWeek = 0;
+              for (const g of s.recurringGenerations) {
+                if (g.recurringGoalId !== rg.id) continue;
+                if (g.date < weekStart || g.date > weekEnd) continue;
+                if (g.status !== "generated") continue;
+                const linked = goalById.get(g.generatedGoalId);
+                if (linked?.completed) completedThisWeek += 1;
+              }
+              if (completedThisWeek >= target) continue;
+            }
             const goal: Goal = {
               id: uid(),
               date,

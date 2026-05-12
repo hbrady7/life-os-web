@@ -1,10 +1,12 @@
 import {
   differenceInCalendarDays,
   endOfMonth,
+  endOfWeek,
   getDate,
   getDay,
   parseISO,
   startOfDay,
+  startOfWeek,
 } from "date-fns";
 import type {
   DateStr,
@@ -41,6 +43,12 @@ export function shouldGenerateForDate(
       return dow === 0 || dow === 6;
     case "weekly":
       return (rg.daysOfWeek ?? []).includes(dow);
+    case "weekly_count":
+      // shouldGenerateForDate is pure (no access to completion log), so we
+      // return true daily once startDate is reached. The store's
+      // runRecurringGeneration pass gates actual generation on completions
+      // already logged in the current calendar week.
+      return true;
     case "biweekly": {
       if (!(rg.daysOfWeek ?? []).includes(dow)) return false;
       const days = differenceInCalendarDays(target, start);
@@ -79,6 +87,10 @@ export function patternSummary(rg: RecurringGoal): string {
         .sort()
         .map((d) => DOW_SHORT[d]);
       return names.length ? `Every ${names.join("/")}` : "Weekly";
+    }
+    case "weekly_count": {
+      const n = rg.weeklyTimes ?? 1;
+      return n === 1 ? "Once a week" : `${n}× per week`;
     }
     case "biweekly": {
       const names = (rg.daysOfWeek ?? [])
@@ -159,6 +171,8 @@ export function patternLabel(p: RecurrencePattern): string {
       return "Weekends";
     case "weekly":
       return "Weekly";
+    case "weekly_count":
+      return "Weekly · X times";
     case "biweekly":
       return "Biweekly";
     case "monthly":
@@ -172,4 +186,19 @@ export function patternLabel(p: RecurrencePattern): string {
 export function isLastDayOfMonth(date: DateStr): boolean {
   const d = startOfDay(parseISO(date));
   return getDate(d) === getDate(endOfMonth(d));
+}
+
+/**
+ * Returns the [startDate, endDate] range (inclusive, ISO YYYY-MM-DD) for the
+ * calendar week containing `date`. Week starts Sunday by default.
+ */
+export function weekRangeFor(date: DateStr): [DateStr, DateStr] {
+  const d = startOfDay(parseISO(date));
+  const s = startOfWeek(d, { weekStartsOn: 0 });
+  const e = endOfWeek(d, { weekStartsOn: 0 });
+  const toIso = (x: Date) =>
+    `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, "0")}-${String(
+      x.getDate()
+    ).padStart(2, "0")}`;
+  return [toIso(s), toIso(e)];
 }

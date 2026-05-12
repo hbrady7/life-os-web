@@ -73,6 +73,7 @@ export function RecurringGoalEditModal({
   const [dayOfMonth, setDayOfMonth] = React.useState("1");
   const [monthlyLastDay, setMonthlyLastDay] = React.useState(false);
   const [intervalDays, setIntervalDays] = React.useState("3");
+  const [weeklyTimes, setWeeklyTimes] = React.useState("3");
   const [startDate, setStartDate] = React.useState(todayStr());
 
   React.useEffect(() => {
@@ -93,12 +94,16 @@ export function RecurringGoalEditModal({
     setIntervalDays(
       initial?.intervalDays != null ? String(initial.intervalDays) : "3"
     );
+    setWeeklyTimes(
+      initial?.weeklyTimes != null ? String(initial.weeklyTimes) : "3"
+    );
     setStartDate(initial?.startDate ?? todayStr());
   }, [open, initial]);
 
   if (!open) return null;
 
   const needsDays = pattern === "weekly" || pattern === "biweekly";
+  const needsWeeklyCount = pattern === "weekly_count";
   const needsDayOfMonth = pattern === "monthly";
   const needsInterval = pattern === "custom";
   const dayOfMonthNum = parseInt(dayOfMonth, 10);
@@ -113,8 +118,18 @@ export function RecurringGoalEditModal({
   const validInterval = needsInterval
     ? Number.isFinite(intervalNum) && intervalNum >= 1
     : true;
+  const weeklyTimesNum = parseInt(weeklyTimes, 10);
+  const validWeeklyCount = needsWeeklyCount
+    ? Number.isFinite(weeklyTimesNum) &&
+      weeklyTimesNum >= 1 &&
+      weeklyTimesNum <= 7
+    : true;
   const canSave =
-    text.trim().length > 0 && validDays && validMonth && validInterval;
+    text.trim().length > 0 &&
+    validDays &&
+    validMonth &&
+    validInterval &&
+    validWeeklyCount;
 
   const toggleDay = (d: number) => {
     setDaysOfWeek((cur) =>
@@ -135,6 +150,7 @@ export function RecurringGoalEditModal({
       dayOfMonth: needsDayOfMonth && !monthlyLastDay ? dayOfMonthNum : undefined,
       monthlyLastDay: needsDayOfMonth ? monthlyLastDay : undefined,
       intervalDays: needsInterval ? intervalNum : undefined,
+      weeklyTimes: needsWeeklyCount ? weeklyTimesNum : undefined,
       startDate,
     };
     onSave(draft);
@@ -363,6 +379,29 @@ export function RecurringGoalEditModal({
             {!validInterval && (
               <div className="text-[11px] text-[var(--color-danger)] mt-1">
                 Must be at least 1.
+              </div>
+            )}
+          </div>
+        )}
+
+        {needsWeeklyCount && (
+          <div>
+            <div className="label mb-2">Times per week</div>
+            <Input
+              type="number"
+              inputMode="numeric"
+              min={1}
+              max={7}
+              value={weeklyTimes}
+              onChange={(e) => setWeeklyTimes(e.target.value)}
+            />
+            <div className="text-[11px] text-[var(--color-fg-3)] mt-1">
+              Generates on Today until you’ve completed it this many times
+              this week. No day-of-week required.
+            </div>
+            {!validWeeklyCount && (
+              <div className="text-[11px] text-[var(--color-danger)] mt-1">
+                Pick a number between 1 and 7.
               </div>
             )}
           </div>
