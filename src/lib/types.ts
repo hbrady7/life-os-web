@@ -270,13 +270,15 @@ export type BodyMeasurement = {
   id: string;
   date: DateStr;
   weight?: number; // stored in lb
-  chest?: number; // inches
+  chest?: number; // inches (legacy — no longer surfaced in UI)
   waist?: number;
   hips?: number;
   bicep?: number;
   thigh?: number;
   bodyFatPct?: number;
   notes?: string;
+  /** Optional IndexedDB key for an attached photo in life-os-photos. */
+  photoIdbKey?: string;
   createdAt: string;
 };
 
