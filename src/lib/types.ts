@@ -402,6 +402,60 @@ export const DEFAULT_DAY_NAVIGATION_SETTINGS: DayNavigationSettings = {
   swipeEnabled: true,
 };
 
+/* ---------- INTEGRATIONS: GOOGLE HEALTH ---------- */
+
+/** Which metric on a given day was last touched by sync vs by a manual log.
+ * Used to:
+ *  - decide whether to render the 🔗 icon next to a value (synced > manual)
+ *  - decide whether to overwrite a value on the next sync (manual override wins)
+ */
+export type GoogleHealthSourceField = {
+  /** ISO timestamp of the last successful sync that wrote this field. */
+  syncedAt?: string;
+  /** ISO timestamp of the last manual entry/edit for this field. */
+  manualOverrideAt?: string;
+};
+
+export type GoogleHealthDaySource = {
+  sleep?: GoogleHealthSourceField;
+  steps?: GoogleHealthSourceField;
+  weight?: GoogleHealthSourceField;
+  restingHeartRate?: GoogleHealthSourceField;
+  heartRateVariability?: GoogleHealthSourceField;
+};
+
+/** Sleep stages in minutes, if the provider exposed them. */
+export type SleepStages = {
+  lightMin?: number;
+  deepMin?: number;
+  remMin?: number;
+  wakeMin?: number;
+};
+
+/** Client-side sync state. Server keeps the tokens; this stores metadata
+ * needed to render the Integrations UI and the inline 🔗 icons. */
+export type GoogleHealthState = {
+  /** Mirrors the server status; refreshed on /api/google-health/status. */
+  connected: boolean;
+  email?: string;
+  /** Set when the server has marked the connection as needing reconnect
+   * (e.g. refresh token was revoked or scope was removed). */
+  needsReconnect: boolean;
+  lastSyncAt?: string; // ISO
+  lastSyncError?: string;
+  /** First sync pulls 30 days; subsequent runs pull 7. */
+  hasCompletedInitialSync: boolean;
+  /** Per-date per-metric provenance — see GoogleHealthDaySource. */
+  sourceByDate: Record<DateStr, GoogleHealthDaySource>;
+};
+
+export const DEFAULT_GOOGLE_HEALTH_STATE: GoogleHealthState = {
+  connected: false,
+  needsReconnect: false,
+  hasCompletedInitialSync: false,
+  sourceByDate: {},
+};
+
 /* ---------- BODY ---------- */
 
 export type BodyMeasurement = {

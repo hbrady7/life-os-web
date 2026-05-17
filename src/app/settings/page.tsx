@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
 import { ToggleRow } from "@/components/ui/toggle";
 import { ManageRecurringModal } from "@/components/today/recurring-manage-modal";
+import { GoogleHealthCard } from "@/components/settings/google-health-card";
 import { useStore } from "@/store";
 import { AccentColor } from "@/lib/types";
 import { haptic } from "@/lib/haptics";
@@ -250,6 +251,10 @@ export default function SettingsPage() {
       <VoiceJournalSettingsCard />
 
       <RecurringGoalsSettingsCard />
+
+      <React.Suspense fallback={null}>
+        <GoogleHealthCard />
+      </React.Suspense>
 
       <Card>
         <CardHeader>

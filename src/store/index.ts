@@ -27,6 +27,9 @@ import {
   EveningRoutineItem,
   EveningRoutineSettings,
   Goal,
+  GoogleHealthState,
+  DEFAULT_GOOGLE_HEALTH_STATE,
+  GoogleHealthDaySource,
   Habit,
   HABIT_TEMPLATES,
   HealthLog,
@@ -92,6 +95,7 @@ type State = {
   cachedPatterns?: CachedPatterns;
   dismissedPatterns: DismissedPattern[];
   weeklyReviews: WeeklyReviewData[];
+  googleHealth: GoogleHealthState;
 };
 
 type Actions = {
@@ -250,6 +254,27 @@ type Actions = {
   addPhotoMeta: (p: Omit<PhotoMeta, "id" | "createdAt">) => void;
   removePhotoMeta: (id: string) => void;
 
+  // google health integration (sync metadata; tokens live server-side)
+  setGoogleHealthStatus: (
+    patch: Partial<Pick<GoogleHealthState, "connected" | "email" | "needsReconnect">>
+  ) => void;
+  setGoogleHealthLastSync: (at: string, errorMsg?: string) => void;
+  markGoogleHealthInitialSyncDone: () => void;
+  /** Stamp `syncedAt` for one or more fields on a given date. Caller is
+   * responsible for actually writing the value into `health[date]`. */
+  recordGoogleHealthSyncedFields: (
+    date: DateStr,
+    fields: Array<keyof GoogleHealthDaySource>,
+    syncedAt: string
+  ) => void;
+  /** Stamp `manualOverrideAt` when the user edits a metric the sync touched.
+   * This is what makes manual entries win over the next sync. */
+  recordGoogleHealthManualOverride: (
+    date: DateStr,
+    field: keyof GoogleHealthDaySource
+  ) => void;
+  resetGoogleHealth: () => void;
+
   // bulk
   exportAll: () => string;
   importAll: (raw: string) => boolean;
@@ -337,6 +362,7 @@ const initialState: State = {
   cachedPatterns: undefined,
   dismissedPatterns: [],
   weeklyReviews: [],
+  googleHealth: { ...DEFAULT_GOOGLE_HEALTH_STATE },
 };
 
 /** Pick the energy period from a clock hour. */
@@ -1224,6 +1250,58 @@ export const useStore = create<State & Actions>()(
       removePhotoMeta: (id) =>
         set((s) => ({ photos: s.photos.filter((p) => p.id !== id) })),
 
+      setGoogleHealthStatus: (patch) =>
+        set((s) => ({
+          googleHealth: { ...s.googleHealth, ...patch },
+        })),
+      setGoogleHealthLastSync: (at, errorMsg) =>
+        set((s) => ({
+          googleHealth: {
+            ...s.googleHealth,
+            lastSyncAt: at,
+            lastSyncError: errorMsg,
+          },
+        })),
+      markGoogleHealthInitialSyncDone: () =>
+        set((s) => ({
+          googleHealth: { ...s.googleHealth, hasCompletedInitialSync: true },
+        })),
+      recordGoogleHealthSyncedFields: (date, fields, syncedAt) =>
+        set((s) => {
+          const current = s.googleHealth.sourceByDate[date] ?? {};
+          const next: GoogleHealthDaySource = { ...current };
+          for (const field of fields) {
+            next[field] = { ...(current[field] ?? {}), syncedAt };
+          }
+          return {
+            googleHealth: {
+              ...s.googleHealth,
+              sourceByDate: { ...s.googleHealth.sourceByDate, [date]: next },
+            },
+          };
+        }),
+      recordGoogleHealthManualOverride: (date, field) =>
+        set((s) => {
+          const current = s.googleHealth.sourceByDate[date] ?? {};
+          const next: GoogleHealthDaySource = {
+            ...current,
+            [field]: {
+              ...(current[field] ?? {}),
+              manualOverrideAt: new Date().toISOString(),
+            },
+          };
+          return {
+            googleHealth: {
+              ...s.googleHealth,
+              sourceByDate: { ...s.googleHealth.sourceByDate, [date]: next },
+            },
+          };
+        }),
+      resetGoogleHealth: () =>
+        set(() => ({
+          googleHealth: { ...DEFAULT_GOOGLE_HEALTH_STATE },
+        })),
+
       exportAll: () => {
         const s = get();
         const payload = {
@@ -1255,6 +1333,7 @@ export const useStore = create<State & Actions>()(
             liftSessions: s.liftSessions,
             dismissedPatterns: s.dismissedPatterns,
             weeklyReviews: s.weeklyReviews,
+            googleHealth: s.googleHealth,
           },
         };
         return JSON.stringify(payload, null, 2);
@@ -1322,6 +1401,12 @@ export const useStore = create<State & Actions>()(
             liftSessions: state.liftSessions ?? [],
             dismissedPatterns: state.dismissedPatterns ?? [],
             weeklyReviews: state.weeklyReviews ?? [],
+            googleHealth: {
+              ...DEFAULT_GOOGLE_HEALTH_STATE,
+              ...(state.googleHealth ?? {}),
+              sourceByDate:
+                state.googleHealth?.sourceByDate ?? {},
+            },
           }));
           return true;
         } catch {
@@ -1414,6 +1499,13 @@ export const useStore = create<State & Actions>()(
           dismissedPatterns:
             p.dismissedPatterns ?? current.dismissedPatterns,
           weeklyReviews: p.weeklyReviews ?? current.weeklyReviews,
+          googleHealth: {
+            ...DEFAULT_GOOGLE_HEALTH_STATE,
+            ...(p.googleHealth ?? {}),
+            sourceByDate:
+              (p.googleHealth as GoogleHealthState | undefined)?.sourceByDate ??
+              current.googleHealth.sourceByDate,
+          },
         } as State & Actions;
         return merged;
       },
