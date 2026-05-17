@@ -72,6 +72,14 @@
   --mc-steps-2: #A3E635;
   --mc-steps-soft: rgba(132, 204, 22, 0.14);
 
+  --mc-hrv: #818CF8;            /* shares sleep indigo — recovery & sleep cluster visually */
+  --mc-hrv-2: #A5B4FC;
+  --mc-hrv-soft: rgba(129, 140, 248, 0.14);
+
+  --mc-rhr: #F87171;            /* warm coral — distinct from rose (mood) and orange (energy) */
+  --mc-rhr-2: #FCA5A5;
+  --mc-rhr-soft: rgba(248, 113, 113, 0.14);
+
   /* Streak tier colors */
   --streak-amber: #F59E0B;
   --streak-orange: #FB923C;

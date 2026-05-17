@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Moon, Smile, Droplet, Scale, Footprints } from "lucide-react";
+import { Moon, Smile, Droplet, Scale, Footprints, HeartPulse, Activity } from "lucide-react";
 import { lastNDates, todayStr } from "@/lib/date";
 import { Sparkline } from "@/components/sparkline";
 import { useStore } from "@/store";
@@ -17,7 +17,7 @@ import { WaterLogModal } from "./log-modals/water-modal";
 import { WeightLogModal } from "./log-modals/weight-modal";
 import { StepsLogModal } from "./log-modals/steps-modal";
 
-type Metric = "sleep" | "mood" | "water" | "weight" | "steps";
+type Metric = "sleep" | "mood" | "water" | "weight" | "steps" | "rhr" | "hrv";
 
 export function PulseStrip() {
   const today = todayStr();
@@ -44,6 +44,10 @@ export function PulseStrip() {
         return h.weight ?? null;
       case "steps":
         return h.steps ?? null;
+      case "rhr":
+        return h.restingHeartRate ?? null;
+      case "hrv":
+        return h.heartRateVariability ?? null;
     }
   };
 
@@ -188,6 +192,26 @@ export function PulseStrip() {
             : "—",
           undefined,
           "steps"
+        )}
+        {tile(
+          "rhr",
+          "Resting HR",
+          HeartPulse,
+          todayHealth?.restingHeartRate != null
+            ? `${todayHealth.restingHeartRate} bpm`
+            : "—",
+          undefined,
+          "restingHeartRate"
+        )}
+        {tile(
+          "hrv",
+          "HRV",
+          Activity,
+          todayHealth?.heartRateVariability != null
+            ? `${Math.round(todayHealth.heartRateVariability)} ms`
+            : "—",
+          undefined,
+          "heartRateVariability"
         )}
       </div>
 

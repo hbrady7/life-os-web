@@ -5,6 +5,8 @@ import {
 } from "@/lib/integrations/google-health/tokens-server";
 import { RefreshFailedError } from "@/lib/integrations/google-health/oauth-server";
 import {
+  fetchHeartRateVariability,
+  fetchRestingHeartRate,
   fetchSleep,
   fetchSteps,
   mergeByDate,
@@ -62,12 +64,13 @@ export async function POST(req: NextRequest) {
   const startDate = dateNDaysAgo(days);
   const endDate = today();
 
-  // Stage 2: sleep + steps. Subsequent stages extend this list. Each
-  // fetch is independent so a partial failure (e.g. one metric unavailable)
-  // doesn't kill the whole sync.
+  // Each fetch is independent so a partial failure (e.g. one metric
+  // unavailable) doesn't kill the whole sync. Stage 4 adds weight here.
   const results = await Promise.allSettled([
     fetchSleep({ accessToken, startDate, endDate }),
     fetchSteps({ accessToken, startDate, endDate }),
+    fetchRestingHeartRate({ accessToken, startDate, endDate }),
+    fetchHeartRateVariability({ accessToken, startDate, endDate }),
   ]);
 
   const sources: SyncedDataPoint[][] = [];

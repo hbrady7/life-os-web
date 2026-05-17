@@ -17,7 +17,9 @@ export type Metric =
   | "mood"
   | "energy"
   | "weight"
-  | "steps";
+  | "steps"
+  | "hrv"
+  | "rhr";
 
 export type MetricColors = {
   base: string;
@@ -75,6 +77,16 @@ const PALETTE: Record<Metric, MetricColors> = {
     base: "var(--mc-steps)",
     light: "var(--mc-steps-2)",
     soft: "var(--mc-steps-soft)",
+  },
+  hrv: {
+    base: "var(--mc-hrv)",
+    light: "var(--mc-hrv-2)",
+    soft: "var(--mc-hrv-soft)",
+  },
+  rhr: {
+    base: "var(--mc-rhr)",
+    light: "var(--mc-rhr-2)",
+    soft: "var(--mc-rhr-soft)",
   },
 };
 
