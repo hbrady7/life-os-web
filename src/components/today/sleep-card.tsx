@@ -11,6 +11,7 @@ import { metricColors } from "@/lib/metric-colors";
 import { SyncedBadge } from "@/components/integrations/synced-badge";
 import { SleepLogModal } from "./log-modals/sleep-modal";
 import { useSelectedDate } from "./day-context";
+import type { SleepStages } from "@/lib/types";
 
 function formatBedtime(wakeTime: string, hours: number): string | null {
   const [hStr, mStr] = wakeTime.split(":");
@@ -130,10 +131,90 @@ export function SleepCard() {
             </span>
           </div>
         )}
+
+        {logged && log?.sleepStages && hasAnyStage(log.sleepStages) && (
+          <SleepStagesBar stages={log.sleepStages} />
+        )}
       </Card>
 
       <SleepLogModal open={open} onClose={() => setOpen(false)} />
     </>
+  );
+}
+
+const STAGE_TOKENS: Record<
+  keyof SleepStages,
+  { color: string; label: string }
+> = {
+  deepMin: { color: "#4F46E5", label: "Deep" }, // indigo-600 — deepest
+  remMin: { color: "#A78BFA", label: "REM" }, // violet-400
+  lightMin: { color: "var(--mc-sleep-2)", label: "Light" }, // indigo-300
+  wakeMin: { color: "var(--color-fg-3)", label: "Wake" },
+};
+
+function hasAnyStage(s: SleepStages): boolean {
+  return [s.lightMin, s.deepMin, s.remMin, s.wakeMin].some(
+    (v) => v != null && v > 0
+  );
+}
+
+function formatStageDuration(min: number): string {
+  if (min < 60) return `${Math.round(min)}m`;
+  const h = Math.floor(min / 60);
+  const m = Math.round(min % 60);
+  return m === 0 ? `${h}h` : `${h}h ${m}m`;
+}
+
+function SleepStagesBar({ stages }: { stages: SleepStages }) {
+  // Order is fixed (deep → rem → light → wake) so the colors stack
+  // predictably across nights even when one stage is zero.
+  const ordered: Array<{ key: keyof SleepStages; min: number }> = [
+    { key: "deepMin", min: stages.deepMin ?? 0 },
+    { key: "remMin", min: stages.remMin ?? 0 },
+    { key: "lightMin", min: stages.lightMin ?? 0 },
+    { key: "wakeMin", min: stages.wakeMin ?? 0 },
+  ];
+  const total = ordered.reduce((acc, s) => acc + s.min, 0);
+  if (total <= 0) return null;
+  return (
+    <div className="mt-3">
+      <div
+        className="flex h-2 overflow-hidden rounded-full border border-[var(--color-stroke)]"
+        role="img"
+        aria-label="Sleep stage breakdown"
+      >
+        {ordered.map((s) => {
+          if (s.min <= 0) return null;
+          const pct = (s.min / total) * 100;
+          return (
+            <div
+              key={s.key}
+              style={{
+                width: `${pct}%`,
+                background: STAGE_TOKENS[s.key].color,
+              }}
+              title={`${STAGE_TOKENS[s.key].label} · ${formatStageDuration(s.min)}`}
+            />
+          );
+        })}
+      </div>
+      <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] text-[var(--color-fg-3)]">
+        {ordered.map((s) =>
+          s.min > 0 ? (
+            <span key={s.key} className="inline-flex items-center gap-1">
+              <span
+                className="inline-block h-2 w-2 rounded-full shrink-0"
+                style={{ background: STAGE_TOKENS[s.key].color }}
+              />
+              <span className="text-[var(--color-fg-2)]">
+                {STAGE_TOKENS[s.key].label}
+              </span>
+              <span className="tnum">{formatStageDuration(s.min)}</span>
+            </span>
+          ) : null
+        )}
+      </div>
+    </div>
   );
 }
 
