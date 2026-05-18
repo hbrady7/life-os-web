@@ -1,13 +1,14 @@
 "use client";
 
 import * as React from "react";
-import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip } from "recharts";
+import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, ReferenceLine, ReferenceArea } from "recharts";
 import { Modal } from "@/components/ui/modal";
 import { useStore } from "@/store";
 import { lastNDates, todayStr, format, fromDateStr } from "@/lib/date";
 import { metricHex } from "@/lib/metric-colors";
 import { round1 } from "@/lib/utils";
 import { computeSleepScore } from "./sleep-score";
+import { computeHrvStatus } from "@/lib/hrv-status";
 
 type VitalKey = "steps" | "hrv" | "sleep";
 
@@ -72,6 +73,19 @@ export function VitalsDetailModal({
     return { avg, min, max, today, streak };
   }, [series, vital]);
 
+  // HRV-only: compute baseline band (mean ± 1 SD over the 30-day window
+  // excluding today) so the chart shows where "balanced" lives.
+  const hrvBand = React.useMemo(() => {
+    if (vital !== "hrv") return null;
+    const todayIso = todayStr();
+    const baseline = series
+      .filter((s) => s.date !== todayIso)
+      .map((s) => s.value);
+    const result = computeHrvStatus(null, baseline);
+    if (result.mean == null || result.sd == null) return null;
+    return { mean: result.mean, lower: result.mean - result.sd, upper: result.mean + result.sd };
+  }, [series, vital]);
+
   if (!vital) return null;
 
   const color = metricHex(vital === "sleep" ? "sleep" : vital === "hrv" ? "hrv" : "steps");
@@ -109,6 +123,26 @@ export function VitalsDetailModal({
                 tickLine={false}
                 width={28}
               />
+              {/* HRV ±1 SD band sits behind the line so the user reads the
+                  series against their personal "balanced" range. */}
+              {hrvBand && (
+                <ReferenceArea
+                  y1={hrvBand.lower}
+                  y2={hrvBand.upper}
+                  ifOverflow="extendDomain"
+                  fill={color}
+                  fillOpacity={0.08}
+                  stroke="none"
+                />
+              )}
+              {hrvBand && (
+                <ReferenceLine
+                  y={hrvBand.mean}
+                  stroke={color}
+                  strokeDasharray="3 3"
+                  strokeOpacity={0.45}
+                />
+              )}
               <Tooltip
                 cursor={{ stroke: "var(--color-stroke-strong)", strokeWidth: 1 }}
                 contentStyle={{
@@ -136,6 +170,12 @@ export function VitalsDetailModal({
             </LineChart>
           </ResponsiveContainer>
         </div>
+        {hrvBand && (
+          <p className="text-[11px] text-[var(--color-fg-3)]">
+            Shaded band is your 30-day mean ± 1 SD ({Math.round(hrvBand.lower)}–{Math.round(hrvBand.upper)} ms).
+            Readings inside the band are &ldquo;balanced.&rdquo;
+          </p>
+        )}
       </div>
     </Modal>
   );

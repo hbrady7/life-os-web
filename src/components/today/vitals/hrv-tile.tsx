@@ -8,6 +8,8 @@ import { haptic } from "@/lib/haptics";
 import { VitalsTileShell } from "./vitals-tile-shell";
 import { MiniTrend } from "./mini-trend";
 import { useCountUp } from "./use-count-up";
+import { HrvStatusPill } from "./hrv-status-pill";
+import { computeHrvStatus } from "@/lib/hrv-status";
 
 type Props = {
   onActivate?: () => void;
@@ -31,6 +33,17 @@ export function HrvTile({ onActivate }: Props) {
     return lastNDates(14).map((d) => health[d]?.heartRateVariability ?? null);
   }, [health]);
 
+  // 30-day baseline EXCLUDING today, for status comparison.
+  const baseline30 = React.useMemo(() => {
+    return lastNDates(30)
+      .filter((d) => d !== today)
+      .map((d) => health[d]?.heartRateVariability ?? null);
+  }, [health, today]);
+  const statusResult = React.useMemo(
+    () => computeHrvStatus(hrv, baseline30),
+    [hrv, baseline30]
+  );
+
   // 7-day average (excluding today) for the delta line.
   const avg7 = React.useMemo(() => {
     const past7 = series.slice(-8, -1).filter((v): v is number => v != null);
@@ -43,6 +56,9 @@ export function HrvTile({ onActivate }: Props) {
   const animated = useCountUp(hrv, `hrv:${today}`);
 
   const delta = hrv != null && avg7 != null ? Math.round(hrv - avg7) : null;
+  // Show pill when we have today's reading. Otherwise the empty state
+  // already communicates "no data yet" without the badge piling on.
+  const showStatusPill = hrv != null;
 
   return (
     <VitalsTileShell
@@ -71,6 +87,11 @@ export function HrvTile({ onActivate }: Props) {
           ms
         </span>
       </div>
+      {showStatusPill && (
+        <div className="mt-2">
+          <HrvStatusPill status={statusResult.status} />
+        </div>
+      )}
       <div className="mt-3 -mx-1 self-stretch">
         <MiniTrend
           values={series}
