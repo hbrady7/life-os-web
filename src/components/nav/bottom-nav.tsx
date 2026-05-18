@@ -17,12 +17,12 @@ import { haptic } from "@/lib/haptics";
 
 const TABS = [
   { href: "/", label: "Today", Icon: Home },
-  { href: "/stats", label: "Stats", Icon: BarChart3 },
+  { href: "/nutrition", label: "Nutrition", Icon: Apple },
   { href: "/habits", label: "Habits", Icon: CheckSquare },
   { href: "/gym", label: "Gym", Icon: Dumbbell },
-  { href: "/nutrition", label: "Nutrition", Icon: Apple },
   { href: "/journal", label: "Journal", Icon: BookOpen },
   { href: "/body", label: "Body", Icon: Scale },
+  { href: "/stats", label: "Stats", Icon: BarChart3 },
 ] as const;
 
 export function BottomNav() {

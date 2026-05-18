@@ -371,8 +371,6 @@ export default function SettingsPage() {
 function NutritionSettingsCard() {
   const targets = useStore((s) => s.settings.nutrition);
   const setNutritionTargets = useStore((s) => s.setNutritionTargets);
-  const showOnToday = useStore((s) => s.settings.showNutritionOnToday);
-  const setShowNutritionOnToday = useStore((s) => s.setShowNutritionOnToday);
   return (
     <Card>
       <CardHeader>
@@ -384,11 +382,6 @@ function NutritionSettingsCard() {
           description="Show macro targets and meal logging."
           checked={targets.enabled}
           onChange={(v) => setNutritionTargets({ enabled: v })}
-        />
-        <ToggleRow
-          label="Show on Today"
-          checked={showOnToday}
-          onChange={setShowNutritionOnToday}
         />
       </div>
       <div className="mt-3 grid grid-cols-2 gap-3">

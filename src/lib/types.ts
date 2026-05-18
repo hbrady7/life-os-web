@@ -628,7 +628,6 @@ export type Settings = {
   eveningRoutine: EveningRoutineSettings;
   eveningRoutineSeeded: boolean;
   nutrition: NutritionTargets;
-  showNutritionOnToday: boolean;
   voiceJournal: VoiceJournalSettings;
   showRecurringIcon: boolean;
   photoFood: PhotoFoodSettings;

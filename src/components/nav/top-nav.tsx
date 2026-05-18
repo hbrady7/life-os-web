@@ -8,12 +8,12 @@ import { cn } from "@/lib/utils";
 
 const TABS = [
   { href: "/", label: "Today" },
-  { href: "/stats", label: "Stats" },
+  { href: "/nutrition", label: "Nutrition" },
   { href: "/habits", label: "Habits" },
   { href: "/gym", label: "Gym" },
-  { href: "/nutrition", label: "Nutrition" },
   { href: "/journal", label: "Journal" },
   { href: "/body", label: "Body" },
+  { href: "/stats", label: "Stats" },
 ] as const;
 
 export function TopNav() {

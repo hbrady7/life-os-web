@@ -204,7 +204,6 @@ type Actions = {
   removeSavedMeal: (id: string) => void;
   logSavedMeal: (savedId: string, date?: DateStr) => void;
   setNutritionTargets: (patch: Partial<NutritionTargets>) => void;
-  setShowNutritionOnToday: (v: boolean) => void;
   setVoiceJournalSettings: (patch: Partial<VoiceJournalSettings>) => void;
   setShowRecurringIcon: (v: boolean) => void;
   setPhotoFoodSettings: (patch: Partial<PhotoFoodSettings>) => void;
@@ -299,7 +298,6 @@ const defaultSettings = (): Settings => ({
     carbs: undefined,
     fat: undefined,
   },
-  showNutritionOnToday: true,
   voiceJournal: { ...DEFAULT_VOICE_JOURNAL_SETTINGS },
   showRecurringIcon: true,
   photoFood: { ...DEFAULT_PHOTO_FOOD_SETTINGS },
@@ -924,10 +922,6 @@ export const useStore = create<State & Actions>()(
             ...s.settings,
             nutrition: { ...s.settings.nutrition, ...patch },
           },
-        })),
-      setShowNutritionOnToday: (v) =>
-        set((s) => ({
-          settings: { ...s.settings, showNutritionOnToday: v },
         })),
       setVoiceJournalSettings: (patch) =>
         set((s) => ({
