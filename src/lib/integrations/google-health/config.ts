@@ -32,6 +32,9 @@ export const DATA_TYPES = {
   weight: "weight",
   restingHeartRate: "daily-resting-heart-rate",
   heartRateVariability: "heart-rate-variability",
+  /** Cardio Load. The exact id is pre-GA — if Google ships it under
+   * a different identifier (e.g. "active-zone-minutes"), patch here. */
+  cardioLoad: "cardio-load",
 } as const;
 
 export type DataTypeKey = keyof typeof DATA_TYPES;

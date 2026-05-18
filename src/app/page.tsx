@@ -16,6 +16,7 @@ import { useStore } from "@/store";
 import { haptic } from "@/lib/haptics";
 import { maybeAutoSync } from "@/lib/integrations/google-health/sync-client";
 import { VitalsTier } from "@/components/today/vitals";
+import { CardioLoadCard } from "@/components/today/cardio-load/cardio-load-card";
 
 export default function Page() {
   React.useEffect(() => {
@@ -64,6 +65,7 @@ function DaySurface() {
     >
       <Screen>
         {!isFuture && <VitalsTier />}
+        {!isFuture && <CardioLoadCard />}
         <MorningBriefing />
         <TodayHeader />
         <WeeklyReviewCard />

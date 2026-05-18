@@ -123,6 +123,22 @@ const c = metricColors("sleep");
 
 **Metric palette** — every metric has `base` / `-2` (lighter sibling for gradients) / `-soft` (~12% opacity for empty-track tints). Access via `metricColors(m)` — never reference `--mc-*` tokens directly in components.
 
+| Metric | Base token | Hue |
+|---|---|---|
+| `calories` | `--mc-calories` | amber (#F59E0B) |
+| `protein` | `--mc-protein` | violet (#A78BFA) |
+| `carbs` | `--mc-carbs` | sky (#38BDF8) |
+| `fat` | `--mc-fat` | emerald (#10B981) |
+| `water` | `--mc-water` | cyan (#22D3EE) |
+| `sleep` | `--mc-sleep` | indigo (#818CF8) |
+| `mood` | `--mc-mood` | rose (#F43F5E) |
+| `energy` | `--mc-energy` | amber/orange (#F59E0B → #FB923C) |
+| `weight` | `--mc-weight` | slate (#94A3B8) |
+| `steps` | `--mc-steps` | lime (#84CC16) |
+| `hrv` | `--mc-hrv` | indigo (shares sleep) |
+| `rhr` | `--mc-rhr` | coral (#F87171) |
+| `cardio` | `--mc-cardio` | rose-300 (#FDA4AF) — Weekly Cardio Load |
+
 **Streak tiers** — `streakTier(n)` returns `{ color, glow, showFlame }`. Bronze ≥3, orange ≥7, gold ≥30.
 
 ### Typography

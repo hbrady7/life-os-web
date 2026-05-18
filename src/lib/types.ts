@@ -188,6 +188,9 @@ export type HealthLog = {
   restingHeartRate?: number;
   /** Daily HRV average (ms). Synced from Google Health when available. */
   heartRateVariability?: number;
+  /** Cardio Load score for the day (Google Health metric). Higher is more
+   * cardiovascular load. Aggregated weekly in the UI. */
+  cardioLoad?: number;
 };
 
 /* ---------- TIME BLOCKING ---------- */

@@ -25,6 +25,7 @@ type ServerUpdate = {
     weight?: number;
     restingHeartRate?: number;
     heartRateVariability?: number;
+    cardioLoad?: number;
   };
 };
 
@@ -46,6 +47,9 @@ const FIELD_TO_SOURCE: Record<
   weight: "weight",
   restingHeartRate: "restingHeartRate",
   heartRateVariability: "heartRateVariability",
+  // Cardio load has no manual entry path, so it doesn't participate in
+  // override-wins. We still write it via setHealth from the sync.
+  cardioLoad: null,
 };
 
 /** Apply one update, respecting manual-override-wins. */

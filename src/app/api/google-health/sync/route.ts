@@ -5,6 +5,7 @@ import {
 } from "@/lib/integrations/google-health/tokens-server";
 import { RefreshFailedError } from "@/lib/integrations/google-health/oauth-server";
 import {
+  fetchCardioLoad,
   fetchHeartRateVariability,
   fetchRestingHeartRate,
   fetchSleep,
@@ -73,6 +74,7 @@ export async function POST(req: NextRequest) {
     fetchRestingHeartRate({ accessToken, startDate, endDate }),
     fetchHeartRateVariability({ accessToken, startDate, endDate }),
     fetchWeight({ accessToken, startDate, endDate }),
+    fetchCardioLoad({ accessToken, startDate, endDate }),
   ]);
 
   const sources: SyncedDataPoint[][] = [];

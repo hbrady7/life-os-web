@@ -33,6 +33,7 @@ export type SyncedFields = {
   weight?: number; // lb (we convert from kg here so the store is consistent)
   restingHeartRate?: number; // bpm
   heartRateVariability?: number; // ms (rMSSD-style)
+  cardioLoad?: number; // Google Health Cardio Load value (daily)
 };
 
 export type SyncedDataPoint = {
@@ -276,6 +277,10 @@ type DailyRollupResponse = {
       maxBpm?: number;
       minBpm?: number;
     };
+    /** Cardio Load — pre-GA, exact field naming may shift. We try a few
+     * shapes so a Google rename doesn't break the whole thing. */
+    cardioLoad?: { value?: number; score?: number; total?: number };
+    activeZoneMinutes?: { totalMinutes?: number };
   }>;
   nextPageToken?: string;
 };
@@ -461,6 +466,37 @@ export async function fetchHeartRateVariability(opts: {
       date,
       fields: { heartRateVariability: +(sum / n).toFixed(1) },
     });
+  }
+  return out;
+}
+
+// ---------------------------------------------------------------------------
+// CARDIO LOAD
+// ---------------------------------------------------------------------------
+
+export async function fetchCardioLoad(opts: {
+  accessToken: string;
+  startDate: DateStr;
+  endDate: DateStr;
+}): Promise<SyncedDataPoint[]> {
+  const res = await fetchDailyRollUp({
+    accessToken: opts.accessToken,
+    dataType: DATA_TYPES.cardioLoad,
+    startDate: opts.startDate,
+    endDate: opts.endDate,
+  });
+  const out: SyncedDataPoint[] = [];
+  for (const r of res.dailyRollups ?? []) {
+    const date = civilDateFromTime(r.civilStartTime);
+    if (!date) continue;
+    // Try the most-likely cardioLoad shapes, then fall back to AZM.
+    const raw =
+      r.cardioLoad?.value ??
+      r.cardioLoad?.score ??
+      r.cardioLoad?.total ??
+      r.activeZoneMinutes?.totalMinutes;
+    if (raw == null || !Number.isFinite(raw)) continue;
+    out.push({ date, fields: { cardioLoad: Math.round(raw) } });
   }
   return out;
 }

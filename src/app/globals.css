@@ -84,6 +84,10 @@
   --mc-rhr-2: #FCA5A5;
   --mc-rhr-soft: rgba(248, 113, 113, 0.14);
 
+  --mc-cardio: #FDA4AF;         /* rose-300 — cardio load. semantically heart-y without colliding with rhr coral or mood rose */
+  --mc-cardio-2: #FECDD3;       /* rose-200 — lighter sibling for gradient highlights */
+  --mc-cardio-soft: rgba(253, 164, 175, 0.14);
+
   /* Streak tier colors */
   --streak-amber: #F59E0B;
   --streak-orange: #FB923C;
