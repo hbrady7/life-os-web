@@ -23,7 +23,6 @@ export function TodayHeader() {
     goToday,
     isToday,
     isPast,
-    isFuture,
     canGoBack,
     canGoForward,
     setDate,
@@ -33,7 +32,6 @@ export function TodayHeader() {
   const day = useStore((s) => s.days[date]);
   const presets = useStore((s) => s.settings.dayTypePresets);
   const setDayType = useStore((s) => s.setDayType);
-  const setReminder = useStore((s) => s.setReminder);
   const addDayType = useStore((s) => s.addDayType);
   const score = useScoreFor(date);
 
@@ -202,14 +200,6 @@ export function TodayHeader() {
         />
       )}
 
-      {/* Reminder only on actual today + past days (planning future days uses
-          goals + schedule instead) */}
-      {!isFuture && (
-        <ReminderInput
-          value={day?.reminder ?? ""}
-          onChange={(v) => setReminder(date, v)}
-        />
-      )}
     </section>
   );
 }
@@ -282,23 +272,3 @@ function DayTypePicker({
   );
 }
 
-function ReminderInput({
-  value,
-  onChange,
-}: {
-  value: string;
-  onChange: (v: string) => void;
-}) {
-  return (
-    <div className="relative mt-4 rounded-xl border border-[var(--color-stroke)] bg-[var(--color-elevated)] px-3 py-2.5">
-      <div className="label mb-1 text-[10px]">Reminder</div>
-      <input
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder="A note for this day…"
-        className="w-full bg-transparent text-[15px] text-[var(--color-fg)] placeholder:text-[var(--color-fg-3)] outline-none no-zoom"
-        maxLength={160}
-      />
-    </div>
-  );
-}

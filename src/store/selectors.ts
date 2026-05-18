@@ -657,7 +657,6 @@ export function getOverseerContext() {
   return {
     today,
     dayType: s.days[today]?.dayType ?? "",
-    reminder: s.days[today]?.reminder ?? "",
     goalsToday: s.goals
       .filter((g) => g.date === today)
       .map((g) => ({

@@ -82,7 +82,6 @@ export function buildInsightsContext30d() {
   const health = days.map((d) => ({
     date: d,
     sleepHours: s.health[d]?.sleepHours,
-    sleepQuality: s.health[d]?.sleepQuality,
     mood: s.health[d]?.mood,
     water: s.health[d]?.waterOz,
     weight: s.health[d]?.weight,
@@ -202,7 +201,6 @@ export function buildWeeklyContext(
     eveningDone: s.evening.filter((r) => r.history[d]?.completed).length,
     eveningTotal: s.evening.length,
     sleepHours: s.health[d]?.sleepHours,
-    sleepQuality: s.health[d]?.sleepQuality,
     mood: s.health[d]?.mood,
     weight: s.health[d]?.weight,
     steps: s.health[d]?.steps,

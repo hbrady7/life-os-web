@@ -35,10 +35,6 @@ import { haptic } from "@/lib/haptics";
 import { cn } from "@/lib/utils";
 import { useDay } from "./day-context";
 
-const EMOJI_PICKER = [
-  "🛏️","📵","☀️","☕","🧘","💊","🎯","🚿","💧","🍳","🌱","🚶","📖","🧠","✍️","🧊","🌅","🪞","🦷","💪","🥗","🏃","🪥","🥛","🧴","⏰","🌿","🍵","📝","🧹",
-];
-
 function formatTime(iso: string): string {
   const d = new Date(iso);
   let h = d.getHours();
@@ -238,8 +234,8 @@ export function MorningRoutine() {
       <RoutineAddModal
         open={adding}
         onClose={() => setAdding(false)}
-        onAdd={(name, icon) => {
-          addItem(name, icon);
+        onAdd={(name) => {
+          addItem(name, "");
           haptic("tap");
           setAdding(false);
         }}
@@ -305,11 +301,6 @@ function RoutineRow({
       >
         <GripVertical size={16} />
       </button>
-      {item.icon && (
-        <span className="text-[22px] leading-none shrink-0 select-none">
-          {item.icon}
-        </span>
-      )}
       <button
         type="button"
         onPointerDown={startPress}
@@ -348,13 +339,9 @@ function RoutineEditModal({
 }) {
   const open = !!item;
   const [name, setName] = React.useState("");
-  const [icon, setIcon] = React.useState("🎯");
 
   React.useEffect(() => {
-    if (item) {
-      setName(item.name);
-      setIcon(item.icon);
-    }
+    if (item) setName(item.name);
   }, [item]);
 
   if (!open) return null;
@@ -372,7 +359,7 @@ function RoutineEditModal({
             <Button variant="ghost" onClick={onClose}>
               Cancel
             </Button>
-            <Button onClick={() => onSave({ name: name.trim() || item!.name, icon })}>
+            <Button onClick={() => onSave({ name: name.trim() || item!.name })}>
               Save
             </Button>
           </div>
@@ -384,7 +371,6 @@ function RoutineEditModal({
           <div className="label mb-2">Name</div>
           <Input value={name} onChange={(e) => setName(e.target.value)} />
         </div>
-        <EmojiPicker value={icon} onPick={setIcon} />
       </div>
     </Modal>
   );
@@ -397,16 +383,12 @@ function RoutineAddModal({
 }: {
   open: boolean;
   onClose: () => void;
-  onAdd: (name: string, icon: string) => void;
+  onAdd: (name: string) => void;
 }) {
   const [name, setName] = React.useState("");
-  const [icon, setIcon] = React.useState("🎯");
 
   React.useEffect(() => {
-    if (open) {
-      setName("");
-      setIcon("🎯");
-    }
+    if (open) setName("");
   }, [open]);
 
   return (
@@ -420,7 +402,7 @@ function RoutineAddModal({
             Cancel
           </Button>
           <Button
-            onClick={() => onAdd(name.trim(), icon)}
+            onClick={() => onAdd(name.trim())}
             disabled={!name.trim()}
           >
             Add
@@ -438,39 +420,7 @@ function RoutineAddModal({
             autoFocus
           />
         </div>
-        <EmojiPicker value={icon} onPick={setIcon} />
       </div>
     </Modal>
-  );
-}
-
-function EmojiPicker({
-  value,
-  onPick,
-}: {
-  value: string;
-  onPick: (e: string) => void;
-}) {
-  return (
-    <div>
-      <div className="label mb-2">Icon</div>
-      <div className="grid grid-cols-10 gap-1.5 max-h-44 overflow-y-auto nice-scroll pr-1">
-        {EMOJI_PICKER.map((e) => (
-          <button
-            key={e}
-            type="button"
-            onClick={() => onPick(e)}
-            className={cn(
-              "h-10 grid place-items-center rounded-lg border text-xl transition",
-              value === e
-                ? "border-[var(--color-accent)] bg-[var(--color-accent-soft)]"
-                : "border-[var(--color-stroke)] hover:border-[var(--color-stroke-strong)]"
-            )}
-          >
-            {e}
-          </button>
-        ))}
-      </div>
-    </div>
   );
 }

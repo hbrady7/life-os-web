@@ -105,7 +105,7 @@ export function buildContextBlock(ctx: OverseerContext): string {
 
   const health = ctx.health
     ? [
-        `  - sleep: ${ctx.health.sleepHours ?? "—"}h (q${ctx.health.sleepQuality ?? "—"})`,
+        `  - sleep: ${ctx.health.sleepHours ?? "—"}h`,
         `  - mood: ${ctx.health.mood ?? "—"}/10`,
         `  - energy: ${ctx.health.energy ?? "—"}/10`,
         `  - water: ${ctx.health.waterOz ?? 0}oz`,
@@ -175,7 +175,6 @@ export function buildContextBlock(ctx: OverseerContext): string {
   return [
     `Today: ${ctx.today}`,
     `Day type: ${ctx.dayType || "(unset)"}`,
-    `Reminder: ${ctx.reminder || "(none)"}`,
     "",
     "Goals today:",
     renderGoals,

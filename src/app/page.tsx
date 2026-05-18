@@ -4,7 +4,6 @@ import * as React from "react";
 import { motion, PanInfo } from "motion/react";
 import { Screen } from "@/components/screen";
 import { TodayHeader } from "@/components/today/header";
-import { SleepCard } from "@/components/today/sleep-card";
 import { MorningBriefing } from "@/components/today/morning-briefing";
 import { MorningRoutine } from "@/components/today/morning-routine";
 import { EveningRoutine } from "@/components/today/evening-routine";
@@ -78,7 +77,6 @@ function DaySurface() {
 function PresentOrPastBody() {
   return (
     <>
-      <SleepCard />
       <MorningRoutine />
       <Goals />
       <EveningRoutine />

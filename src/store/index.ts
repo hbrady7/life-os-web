@@ -114,7 +114,6 @@ type Actions = {
 
   // days
   setDayType: (date: DateStr, type: string) => void;
-  setReminder: (date: DateStr, reminder: string) => void;
 
   // goals
   addGoal: (
@@ -441,10 +440,6 @@ export const useStore = create<State & Actions>()(
       setDayType: (date, type) =>
         set((s) => ({
           days: { ...s.days, [date]: { ...(s.days[date] ?? { date, dayType: "" }), dayType: type } },
-        })),
-      setReminder: (date, reminder) =>
-        set((s) => ({
-          days: { ...s.days, [date]: { ...(s.days[date] ?? { date, dayType: "" }), reminder } },
         })),
 
       addGoal: (input) =>
@@ -1567,6 +1562,16 @@ export const useStore = create<State & Actions>()(
           const next = migrateLegacyEnergy(state.health, state.energy);
           // direct state mutation via the underlying set
           useStore.setState({ energy: next });
+        }
+        // Routines went emoji-free in May 2026. Wipe any persisted icon
+        // strings so existing users stop seeing leftover emojis next to items.
+        const hasRoutineIcon = state.routine.some((r) => r.icon);
+        const hasEveningIcon = state.evening.some((r) => r.icon);
+        if (hasRoutineIcon || hasEveningIcon) {
+          useStore.setState({
+            routine: state.routine.map((r) => ({ ...r, icon: "" })),
+            evening: state.evening.map((r) => ({ ...r, icon: "" })),
+          });
         }
       },
     }

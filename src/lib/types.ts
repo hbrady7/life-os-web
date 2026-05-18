@@ -173,7 +173,6 @@ export type Workout = {
 export type HealthLog = {
   date: DateStr; // primary key
   sleepHours?: number;
-  sleepQuality?: number; // 1..10
   /** Wake-up time as "HH:MM" 24h. Bedtime is derived = wakeTime - sleepHours. */
   wakeTime?: string;
   /** Sleep stages in minutes — only populated when a synced provider exposes them. */
@@ -544,7 +543,6 @@ export type Day = {
   date: DateStr;
   dayType: DayType;
   scoreCache?: number;
-  reminder?: string;
 };
 
 export type ListItem = {
