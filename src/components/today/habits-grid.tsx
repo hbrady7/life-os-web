@@ -4,20 +4,23 @@ import * as React from "react";
 import Link from "next/link";
 import { Plus } from "lucide-react";
 import { StreakBadge } from "@/components/ui/streak-badge";
-import { useStore } from "@/store";
-import { useHabits, useToday } from "@/store/selectors";
+import { useToday } from "@/store/selectors";
+import {
+  toggleHabit,
+  useHabitsWithHistory,
+  type HabitWithHistory,
+} from "@/lib/hooks/use-habits";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { HabitGlyph } from "@/components/habit-icon";
 import { cn } from "@/lib/utils";
 import { haptic } from "@/lib/haptics";
-import { Habit, DateStr } from "@/lib/types";
+import { DateStr, HabitIcon } from "@/lib/types";
 import { lastNDates } from "@/lib/date";
 import { streakForHabit } from "@/lib/score";
 
 export function HabitsGrid() {
   const today = useToday();
-  const habits = useHabits();
-  const toggleHabit = useStore((s) => s.toggleHabit);
+  const { habits } = useHabitsWithHistory();
 
   return (
     <Card>
@@ -41,8 +44,10 @@ export function HabitsGrid() {
               habit={h}
               today={today}
               onToggle={() => {
-                toggleHabit(h.id, today);
-                haptic(h.history[today] ? "soft" : "success");
+                const wasDone = !!h.history[today];
+                haptic(wasDone ? "soft" : "success");
+                // Optimistic; SWR mutate rolls back on failure.
+                void toggleHabit(h.id, today);
               }}
             />
           ))}
@@ -66,7 +71,7 @@ function HabitTile({
   today,
   onToggle,
 }: {
-  habit: Habit;
+  habit: HabitWithHistory;
   today: DateStr;
   onToggle: () => void;
 }) {
@@ -96,7 +101,7 @@ function HabitTile({
               : "bg-[var(--color-card)] text-[var(--color-fg-2)]"
           )}
         >
-          <HabitGlyph name={habit.icon} size={14} />
+          <HabitGlyph name={habit.icon as HabitIcon} size={14} />
         </div>
         <StreakBadge streak={streak} size={11} className="text-[10px]" />
       </div>

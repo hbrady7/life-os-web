@@ -24,10 +24,15 @@ import { Button } from "@/components/ui/button";
 import { Modal } from "@/components/ui/modal";
 import { Input } from "@/components/ui/input";
 import { HabitGlyph, HABIT_ICON_NAMES } from "@/components/habit-icon";
-import { useStore } from "@/store";
-import { useHabits } from "@/store/selectors";
 import {
-  Habit,
+  createHabitOptimistic,
+  deleteHabitOptimistic,
+  toggleHabit,
+  updateHabitOptimistic,
+  useHabitsWithHistory,
+  type HabitWithHistory,
+} from "@/lib/hooks/use-habits";
+import {
   HabitIcon as HI,
   HABIT_TEMPLATES,
 } from "@/lib/types";
@@ -37,24 +42,27 @@ import { haptic } from "@/lib/haptics";
 import { cn } from "@/lib/utils";
 
 export default function HabitsPage() {
-  const habits = useHabits();
-  const addHabit = useStore((s) => s.addHabit);
-  const removeHabit = useStore((s) => s.removeHabit);
-  const reorderHabits = useStore((s) => s.reorderHabits);
+  const { habits } = useHabitsWithHistory();
   const [open, setOpen] = React.useState(false);
-  const [editing, setEditing] = React.useState<Habit | null>(null);
+  const [editing, setEditing] = React.useState<HabitWithHistory | null>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } })
   );
 
-  const onDragEnd = (e: DragEndEvent) => {
+  const onDragEnd = async (e: DragEndEvent) => {
     const { active, over } = e;
     if (!over || active.id === over.id) return;
     const oldI = habits.findIndex((h) => h.id === active.id);
     const newI = habits.findIndex((h) => h.id === over.id);
     if (oldI < 0 || newI < 0) return;
-    reorderHabits(arrayMove(habits, oldI, newI).map((h) => h.id));
+    const reordered = arrayMove(habits, oldI, newI);
+    // Optimistic per-item PATCH; SWR refetch reconciles at the end.
+    await Promise.all(
+      reordered.map((h, i) =>
+        h.order === i ? Promise.resolve() : updateHabitOptimistic(h.id, { order: i })
+      )
+    );
   };
 
   return (
@@ -81,7 +89,7 @@ export default function HabitsPage() {
               habit={h}
               onEdit={() => setEditing(h)}
               onRemove={() => {
-                removeHabit(h.id);
+                void deleteHabitOptimistic(h.id);
                 haptic("warn");
               }}
             />
@@ -108,7 +116,7 @@ export default function HabitsPage() {
         open={open}
         onClose={() => setOpen(false)}
         onAdd={(name, icon) => {
-          addHabit(name, icon);
+          void createHabitOptimistic({ name, icon });
           haptic("tap");
         }}
       />
@@ -126,11 +134,10 @@ function HabitFullRow({
   onEdit,
   onRemove,
 }: {
-  habit: Habit;
+  habit: HabitWithHistory;
   onEdit: () => void;
   onRemove: () => void;
 }) {
-  const toggleHabit = useStore((s) => s.toggleHabit);
   const today = todayStr();
   const streak = streakForHabit(habit.history, today);
   const longest = longestStreak(habit.history);
@@ -169,7 +176,7 @@ function HabitFullRow({
             <GripVertical size={14} />
           </button>
           <div className="h-9 w-9 grid place-items-center rounded-xl bg-[var(--color-accent-soft)] text-[var(--color-accent)]">
-            <HabitGlyph name={habit.icon} size={16} />
+            <HabitGlyph name={habit.icon as HI} size={16} />
           </div>
           <button
             type="button"
@@ -201,7 +208,7 @@ function HabitFullRow({
       </div>
 
       <Calendar60 history={habit.history} onToggle={(d) => {
-        toggleHabit(habit.id, d);
+        void toggleHabit(habit.id, d);
         haptic("tap");
       }} />
     </Card>
@@ -354,10 +361,9 @@ function EditHabitModal({
   habit,
   onClose,
 }: {
-  habit: Habit | null;
+  habit: HabitWithHistory | null;
   onClose: () => void;
 }) {
-  const updateHabit = useStore((s) => s.updateHabit);
   const [name, setName] = React.useState("");
   const [icon, setIcon] = React.useState<HI>("target");
   const open = !!habit;
@@ -365,13 +371,16 @@ function EditHabitModal({
   React.useEffect(() => {
     if (habit) {
       setName(habit.name);
-      setIcon(habit.icon);
+      setIcon(habit.icon as HI);
     }
   }, [habit]);
 
   const save = () => {
     if (!habit) return;
-    updateHabit(habit.id, { name: name.trim() || habit.name, icon });
+    void updateHabitOptimistic(habit.id, {
+      name: name.trim() || habit.name,
+      icon,
+    });
     onClose();
   };
 

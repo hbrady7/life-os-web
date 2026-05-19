@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { AccentProvider } from "@/components/accent-provider";
 import { AppShell } from "@/components/app-shell";
 import { ServiceWorkerRegister } from "@/components/sw-register";
+import { SwrProvider } from "@/components/swr-provider";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -34,7 +35,9 @@ export default function RootLayout({
       <body>
         <AccentProvider />
         <ServiceWorkerRegister />
-        <AppShell>{children}</AppShell>
+        <SwrProvider>
+          <AppShell>{children}</AppShell>
+        </SwrProvider>
       </body>
     </html>
   );
