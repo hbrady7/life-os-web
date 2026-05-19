@@ -7,6 +7,7 @@ import { BottomNav } from "@/components/nav/bottom-nav";
 import { MobileTopBar } from "@/components/nav/mobile-top-bar";
 import { HydrateGate } from "@/components/hydrate-gate";
 import { Overseer } from "@/components/overseer/overseer";
+import { ImportModal } from "@/components/import-modal";
 
 /**
  * Conditional chrome wrapper. The sign-in route lives at /signin and
@@ -29,6 +30,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       {children}
       <BottomNav />
       <Overseer />
+      <ImportModal />
     </HydrateGate>
   );
 }
