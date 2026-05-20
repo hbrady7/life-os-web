@@ -13,6 +13,7 @@ import {
   type BodyPhotoSessionRow,
 } from "@/lib/hooks/use-body-photo-sessions";
 import { PhotoSessionCaptureModal } from "./photo-session-capture-modal";
+import { PhotoSessionDetailModal } from "./photo-session-detail-modal";
 
 /**
  * Lists existing body photo sessions (most recent first) + a "Take
@@ -25,6 +26,7 @@ import { PhotoSessionCaptureModal } from "./photo-session-capture-modal";
 export function PhotoSessionsCard() {
   const { sessions, isLoading } = useBodyPhotoSessions();
   const [captureOpen, setCaptureOpen] = React.useState(false);
+  const [detailId, setDetailId] = React.useState<string | null>(null);
 
   return (
     <>
@@ -65,7 +67,14 @@ export function PhotoSessionsCard() {
         ) : (
           <ul className="space-y-2">
             {sessions.slice(0, 8).map((s) => (
-              <SessionRow key={s.id} session={s} />
+              <SessionRow
+                key={s.id}
+                session={s}
+                onOpen={() => {
+                  haptic("tap");
+                  setDetailId(s.id);
+                }}
+              />
             ))}
             {sessions.length > 8 && (
               <li className="text-center text-[11px] text-[var(--color-fg-3)] pt-1">
@@ -80,14 +89,29 @@ export function PhotoSessionsCard() {
         open={captureOpen}
         onClose={() => setCaptureOpen(false)}
       />
+      <PhotoSessionDetailModal
+        sessionId={detailId}
+        onClose={() => setDetailId(null)}
+      />
     </>
   );
 }
 
-function SessionRow({ session }: { session: BodyPhotoSessionRow }) {
+function SessionRow({
+  session,
+  onOpen,
+}: {
+  session: BodyPhotoSessionRow;
+  onOpen: () => void;
+}) {
   const entries = (session.photoKeys as BodyPhotoEntry[] | null) ?? [];
   return (
-    <li className="rounded-xl border border-[var(--color-stroke)] bg-[var(--color-elevated)] px-3 py-2.5 flex items-center gap-3">
+    <li>
+      <button
+        type="button"
+        onClick={onOpen}
+        className="w-full text-left rounded-xl border border-[var(--color-stroke)] bg-[var(--color-elevated)] px-3 py-2.5 flex items-center gap-3 hover:border-[var(--color-stroke-strong)] active:scale-[0.99] transition"
+      >
       <div className="flex gap-1.5 shrink-0">
         {entries.slice(0, 3).map((e) => (
           <Thumb key={e.key} keyName={e.key} />
@@ -105,6 +129,7 @@ function SessionRow({ session }: { session: BodyPhotoSessionRow }) {
           {session.notes ? ` · ${session.notes}` : ""}
         </div>
       </div>
+      </button>
     </li>
   );
 }
