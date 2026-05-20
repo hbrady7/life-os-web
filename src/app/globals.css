@@ -134,12 +134,31 @@
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
-    overscroll-behavior-y: none;
+    /* Cover both axes — y prevents the iOS rubber-band on the page;
+     * x prevents an accidental edge-swipe from popping the PWA history. */
+    overscroll-behavior: none;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   }
 
   body {
     min-height: 100dvh;
+  }
+
+  /* PWA standalone mode hook.
+   *
+   * <PwaMode /> (src/components/pwa-mode.tsx) sets
+   * `html[data-pwa="standalone"]` on mount when display-mode is
+   * standalone (or the legacy iOS navigator.standalone is true).
+   * Targets that need a tweak only in installed-PWA mode use:
+   *
+   *   html[data-pwa="standalone"] .my-thing { … }
+   *
+   * The browser-tab case stays default — no URL-bar-derived spacing
+   * lives anywhere in the layout, so nothing breaks if the attribute
+   * is absent. The empty selector below is documentation; specific
+   * tweaks land alongside the components that need them. */
+  html[data-pwa="standalone"] {
+    /* hook anchor — keep selector live even when no rules apply */
   }
 
   /* tabular numerals on data-heavy spots */

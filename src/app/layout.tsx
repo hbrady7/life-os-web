@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { AccentProvider } from "@/components/accent-provider";
 import { AppShell } from "@/components/app-shell";
+import { PwaMode } from "@/components/pwa-mode";
 import { ServiceWorkerRegister } from "@/components/sw-register";
 import { SwrProvider } from "@/components/swr-provider";
 import "./globals.css";
@@ -35,6 +36,7 @@ export default function RootLayout({
       <body>
         <AccentProvider />
         <ServiceWorkerRegister />
+        <PwaMode />
         <SwrProvider>
           <AppShell>{children}</AppShell>
         </SwrProvider>
