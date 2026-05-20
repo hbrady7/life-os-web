@@ -79,6 +79,16 @@ export function useWeight(date: string) {
   const swr = useSWR<WeightRow>(keyFor("weight", date));
   return { weight: swr.data ?? null, isLoading: swr.isLoading };
 }
+export type WeightRangeRow = {
+  userId: string;
+  date: string;
+  lb: number;
+  source: "manual" | "sync";
+  updatedAt: Date;
+};
+export function useWeightRange(start: string, end: string) {
+  return useSWR<WeightRangeRow[]>(rangeKeyFor("weight", start, end));
+}
 export async function setWeight(date: string, lb: number) {
   const key = keyFor("weight", date);
   await mutate<WeightRow>(
@@ -92,6 +102,10 @@ export async function setWeight(date: string, lb: number) {
     body: JSON.stringify({ date, lb, source: "manual" }),
   });
   await mutate(key);
+  // Invalidate any open range readers (trend chart, rolling avg) so
+  // they pick up the new point without a hard reload.
+  await mutate((k) => typeof k === "string" && k.startsWith("/api/data/metrics/weight"));
+  void triggerPeakStateRecompute(date);
 }
 
 // ── MOOD ────────────────────────────────────────────────────────────────────

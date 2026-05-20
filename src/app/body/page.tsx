@@ -1,15 +1,6 @@
 "use client";
 
 import * as React from "react";
-import {
-  ResponsiveContainer,
-  LineChart,
-  Line,
-  YAxis,
-  XAxis,
-  Tooltip,
-  CartesianGrid,
-} from "recharts";
 import { Camera, Plus, Trash2 } from "lucide-react";
 import { Screen } from "@/components/screen";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
@@ -21,10 +12,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { useStore } from "@/store";
 import { useBodyRaw } from "@/store/selectors";
 import { BodyMeasurement } from "@/lib/types";
-import { todayStr, format, fromDateStr, lastNDates } from "@/lib/date";
+import { todayStr, format, fromDateStr } from "@/lib/date";
 import { round1, uid, cn } from "@/lib/utils";
 import { haptic } from "@/lib/haptics";
 import { compressImage, deletePhoto, getPhoto, putPhoto } from "@/lib/photo-store";
+import { DailyWeightCard } from "@/components/body/daily-weight-card";
 
 export default function BodyPage() {
   const body = useBodyRaw();
@@ -42,25 +34,22 @@ export default function BodyPage() {
 
   return (
     <Screen title="Body" subtitle="Weight, notes, photos — one entry at a time.">
-      <Button onClick={() => setLogOpen(true)} className="w-full" size="lg">
-        <Plus size={16} />
-        New entry
-      </Button>
+      {/* Daily weight + rolling-average trend (per-day singletons in
+       *  weight_logs). The richer measurement+notes+photo entries below
+       *  remain on the Zustand body-measurements path. */}
+      <DailyWeightCard />
 
       <Card>
         <CardHeader>
-          <CardTitle>Weight · 90 days</CardTitle>
+          <CardTitle>Detailed entries</CardTitle>
+          <Button onClick={() => setLogOpen(true)} size="sm">
+            <Plus size={13} />
+            New
+          </Button>
         </CardHeader>
-        <WeightTrend body={body} />
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>History</CardTitle>
-          <span className="text-xs text-[var(--color-fg-3)]">
-            {sorted.length} entr{sorted.length === 1 ? "y" : "ies"}
-          </span>
-        </CardHeader>
+        <span className="text-xs text-[var(--color-fg-3)] block mb-3">
+          {sorted.length} entr{sorted.length === 1 ? "y" : "ies"} — for notes, body fat, and progress photos
+        </span>
         {sorted.length === 0 ? (
           <div className="py-8 text-center">
             <div className="text-sm text-[var(--color-fg-2)]">
@@ -196,76 +185,6 @@ function EntryRow({
   );
 }
 
-function WeightTrend({ body }: { body: BodyMeasurement[] }) {
-  const data = React.useMemo(() => {
-    const dates = lastNDates(90);
-    const map = new Map<string, number>();
-    for (const m of body) {
-      if (m.weight != null) map.set(m.date, m.weight);
-    }
-    return dates.map((d) => ({
-      date: format(fromDateStr(d), "M/d"),
-      v: map.get(d) ?? null,
-    }));
-  }, [body]);
-  const valid = data.filter((d) => d.v != null);
-  if (valid.length === 0) {
-    return (
-      <div className="py-6 text-center text-xs text-[var(--color-fg-3)]">
-        Log a weight to see the trend.
-      </div>
-    );
-  }
-  const last = valid[valid.length - 1].v as number;
-  return (
-    <>
-      <div className="flex items-baseline justify-between mb-2">
-        <span className="text-[var(--color-fg-3)] text-xs">Latest</span>
-        <span className="text-base font-semibold tnum">
-          {round1(last)} lb
-        </span>
-      </div>
-      <div className="h-32">
-        <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={data} margin={{ top: 4, right: 0, left: 0, bottom: 0 }}>
-            <CartesianGrid stroke="var(--color-stroke)" strokeDasharray="2 4" />
-            <XAxis
-              dataKey="date"
-              tick={{ fill: "var(--color-fg-3)", fontSize: 10 }}
-              interval={Math.max(0, Math.floor(data.length / 6) - 1)}
-              tickLine={false}
-              axisLine={false}
-            />
-            <YAxis
-              domain={["auto", "auto"]}
-              tick={{ fill: "var(--color-fg-3)", fontSize: 10 }}
-              tickLine={false}
-              axisLine={false}
-              width={32}
-            />
-            <Tooltip
-              contentStyle={{
-                background: "var(--color-card)",
-                border: "1px solid var(--color-stroke-strong)",
-                fontSize: 11,
-                borderRadius: 8,
-              }}
-              labelStyle={{ color: "var(--color-fg-3)" }}
-            />
-            <Line
-              type="monotone"
-              dataKey="v"
-              stroke="var(--color-accent)"
-              strokeWidth={2}
-              dot={false}
-              connectNulls
-            />
-          </LineChart>
-        </ResponsiveContainer>
-      </div>
-    </>
-  );
-}
 
 function BodyEntryModal({
   open,

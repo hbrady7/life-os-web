@@ -1,14 +1,25 @@
 import { NextRequest } from "next/server";
 import { withUser, withUserRequest } from "@/lib/api-helpers";
-import { getWeight, setWeight } from "@/lib/data/metrics";
+import { getWeight, readWeightRange, setWeight } from "@/lib/data/metrics";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+/**
+ * GET supports two modes:
+ *   ?date=YYYY-MM-DD            → single-day row (or null)
+ *   ?start=YYYY-MM-DD&end=...   → range, oldest → newest, for the
+ *                                 daily trend chart + rolling average
+ */
 export async function GET(req: NextRequest) {
   const date = req.nextUrl.searchParams.get("date");
-  if (!date) return missing();
-  return withUser((userId) => getWeight(userId, date));
+  if (date) return withUser((userId) => getWeight(userId, date));
+  const start = req.nextUrl.searchParams.get("start");
+  const end = req.nextUrl.searchParams.get("end");
+  if (start && end) {
+    return withUser((userId) => readWeightRange(userId, start, end));
+  }
+  return missing();
 }
 
 export async function PUT(req: NextRequest) {
