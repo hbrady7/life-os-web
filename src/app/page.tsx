@@ -18,6 +18,8 @@ import { maybeAutoSync } from "@/lib/integrations/google-health/sync-client";
 import { VitalsTier } from "@/components/today/vitals";
 import { CardioLoadCard } from "@/components/today/cardio-load/cardio-load-card";
 import { PeakStateHero } from "@/components/today/peak-state/peak-state-hero";
+import { PullToRefresh } from "@/components/pull-to-refresh";
+import { mutate as swrMutate } from "swr";
 
 export default function Page() {
   React.useEffect(() => {
@@ -58,23 +60,39 @@ function DaySurface() {
     }
   };
 
+  /** Revalidate every /api/data/* SWR cache key + nudge a sync. The
+   *  pull-to-refresh handler awaits this so the spinner stays up until
+   *  the new data lands. */
+  const onRefresh = React.useCallback(async () => {
+    await Promise.all([
+      swrMutate(
+        (k) => typeof k === "string" && k.startsWith("/api/data/"),
+        undefined,
+        { revalidate: true }
+      ),
+      maybeAutoSync(),
+    ]);
+  }, []);
+
   return (
-    <motion.div
-      onPanEnd={swipeEnabled ? onPanEnd : undefined}
-      // Allow vertical scroll; only intercept horizontal pans
-      style={{ touchAction: "pan-y" }}
-    >
-      <Screen>
-        {!isFuture && <PeakStateHero />}
-        {!isFuture && <VitalsTier />}
-        {!isFuture && <CardioLoadCard />}
-        <MorningBriefing />
-        <TodayHeader />
-        <WeeklyReviewCard />
-        <PatternCard />
-        {isFuture ? <FutureBody /> : <PresentOrPastBody />}
-      </Screen>
-    </motion.div>
+    <PullToRefresh onRefresh={onRefresh}>
+      <motion.div
+        onPanEnd={swipeEnabled ? onPanEnd : undefined}
+        // Allow vertical scroll; only intercept horizontal pans
+        style={{ touchAction: "pan-y" }}
+      >
+        <Screen>
+          {!isFuture && <PeakStateHero />}
+          {!isFuture && <VitalsTier />}
+          {!isFuture && <CardioLoadCard />}
+          <MorningBriefing />
+          <TodayHeader />
+          <WeeklyReviewCard />
+          <PatternCard />
+          {isFuture ? <FutureBody /> : <PresentOrPastBody />}
+        </Screen>
+      </motion.div>
+    </PullToRefresh>
   );
 }
 

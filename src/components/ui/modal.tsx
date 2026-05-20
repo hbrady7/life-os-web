@@ -4,6 +4,7 @@ import * as React from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { haptic } from "@/lib/haptics";
 
 type ModalProps = {
   open: boolean;
@@ -34,6 +35,9 @@ export function Modal({
 }: ModalProps) {
   React.useEffect(() => {
     if (!open) return;
+    // Light tap on open — mirrors the "sheet snapped up" feel native
+    // apps give. No-op outside a supporting device.
+    haptic("soft");
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
     };
@@ -71,7 +75,10 @@ export function Modal({
             dragConstraints={{ top: 0, bottom: 0 }}
             dragElastic={0.18}
             onDragEnd={(_, info) => {
-              if (info.offset.y > 120 || info.velocity.y > 600) onClose();
+              if (info.offset.y > 120 || info.velocity.y > 600) {
+                haptic("warn");
+                onClose();
+              }
             }}
             className={cn(
               "relative w-full card rounded-b-none sm:rounded-b-[var(--radius-card)] sm:mb-0 flex flex-col max-h-[90dvh] touch-pan-y",
