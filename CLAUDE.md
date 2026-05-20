@@ -161,17 +161,48 @@ const c = metricColors("sleep");
 ### Typography
 
 - Font family: **Inter Variable** via `--font-sans` (system fallback chain in the var).
-- Page title (`<Screen title>`): `text-[28px] font-bold tracking-tight`.
-- Card title pattern: the `.label` utility — `11px uppercase tracking-[0.14em] text-fg-3 font-medium`.
 - Numbers: add `.tnum` (tabular-nums) anywhere digits update — counters, sparkline tooltips, durations, kcal.
 - Inputs on mobile must be `font-size: 16px` to suppress iOS zoom-on-focus — use the `.no-zoom` utility when needed.
+
+**Type scale.** Use these sizes; resist freelancing.
+
+| Tier | Use for | Size (mobile / desktop) |
+|---|---|---|
+| Display | Hero numbers (Peak State, Vitals values) | `text-[48px]` – `text-[60px]`, always `.tnum` |
+| Title | Page headers (`<Screen title>`) | `text-[26px]` mobile / `text-[28px]` desktop, `font-bold tracking-tight` |
+| Section header | "What's moving your score" etc. | the `.label` utility — `11px uppercase tracking-[0.14em] text-fg-3 font-medium` |
+| Subtitle | Page subtitle, card descriptions | `text-sm text-[var(--color-fg-2)]` (14px) |
+| Body | Standard text | `text-[15px]` – `text-base` (15-16px) |
+| Caption | Helper / muted text | `text-xs text-[var(--color-fg-3)]` (12px) |
 
 ### Spacing, radii, shadows
 
 - Radii: `--radius-card` (1.25rem), `--radius-control` (0.75rem), `--radius-pill` (9999px). Use the tokens, not magic numbers.
 - Shadows: `--shadow-card` (subtle inset + drop), `--shadow-float` (modal/floating UI), `--shadow-glow` (accent glow for primary buttons / active states).
 - Card surface is the `.card` utility: `bg-card border border-stroke rounded-[var(--radius-card)] shadow-[var(--shadow-card)]`. Hover state: `.card-hover`. Don't reinvent.
-- Page chrome: wrap screens in `<Screen>` — handles `max-w-[640px]`, safe-area top/bottom, child `space-y-4`.
+- Page chrome: wrap screens in `<Screen>` — handles `max-w-[640px]`, safe-area top/bottom, child `space-y-3 md:space-y-4`.
+
+**Spacing rhythm.** The `<Screen>` wrapper enforces this; matching it inside cards keeps the cadence visually coherent.
+
+| Slot | Mobile | Desktop |
+|---|---|---|
+| Page horizontal padding (inside `<Screen>`) | 16 (`px-4`) | 24 (`px-6`) |
+| Inter-card vertical gap | 12 (`space-y-3`) | 16 (`space-y-4`) |
+| Card internal padding | 16-20 | 20-24 |
+| Page bottom padding for BottomNav clearance | `env(safe-area-inset-bottom) + 6rem` | `7.5rem` |
+| Page top padding for mobile top bar | `env(safe-area-inset-top) + 3.75rem` | `4` |
+
+### Touch targets
+
+- **Every interactive element ≥44×44** (Apple HIG floor; Android Material is similar at 48).
+- Bottom-nav tabs are 56px tall; the Overseer FAB is 56px; modal close + nav buttons are `h-11 w-11` (44px).
+- `.iconSm` button variant (32px) is the **only sanctioned exception** — it exists for dense card-header action rows where the surrounding row provides redundant tap area (e.g. a card you can also tap to expand).
+- Two known sub-44 layout exceptions, both day-of-week pickers in tight 7-cell rows that would overflow a 375px viewport at 44px each: `app/onboarding/page.tsx` and `components/today/recurring-goal-edit-modal.tsx`. Don't follow these elsewhere; they're tolerated in those exact contexts only.
+- For row-action buttons (delete, edit, dismiss) that should appear only on desktop hover, use `opacity-100 md:opacity-0 md:group-hover:opacity-100` — they must stay visible AND tappable on touch.
+
+### PWA standalone hook
+
+`<PwaMode />` (mounted in RootLayout) sets `html[data-pwa="standalone"]` when the app is launched as an installed PWA. Standalone-only tweaks live behind that selector. No layout in this app assumes the Safari URL bar exists — `100dvh` + `env(safe-area-inset-*)` cover both modes correctly.
 
 ### Motion patterns
 
