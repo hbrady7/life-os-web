@@ -144,6 +144,12 @@ export async function runGoogleHealthSync(
     if (!gh.hasCompletedInitialSync) {
       store.markGoogleHealthInitialSyncDone();
     }
+    // Fire-and-forget: now that fresh HRV/RHR/sleep/cardio rows have
+    // landed (RHR in Neon, others in Zustand for now), nudge the Peak
+    // State pipeline to recompute against the new readings.
+    void import("@/lib/peak-state/client").then((m) =>
+      m.triggerPeakStateRecompute()
+    );
     return true;
   } catch (e) {
     // Network errors are silent — caller decides whether to surface.

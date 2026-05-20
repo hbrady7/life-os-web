@@ -1,6 +1,7 @@
 "use client";
 
 import useSWR, { mutate } from "swr";
+import { triggerPeakStateRecompute } from "@/lib/peak-state/client";
 
 /**
  * Per-metric SWR hooks. Each daily-singleton metric has:
@@ -8,6 +9,10 @@ import useSWR, { mutate } from "swr";
  *   - `set{Metric}(...)` → optimistic write + server PUT
  *
  * Range readers used by charts: `use{Metric}Range(start, end)`.
+ *
+ * Inputs that feed Peak State (mood, energy, water) fire a
+ * fire-and-forget triggerPeakStateRecompute(date) after the server
+ * write so the hero card refreshes without an explicit poke.
  */
 
 function keyFor(metric: string, date: string) {
@@ -38,6 +43,7 @@ export async function setWater(date: string, oz: number) {
     body: JSON.stringify({ date, oz }),
   });
   await mutate(key);
+  void triggerPeakStateRecompute(date);
 }
 export async function addWater(date: string, deltaOz: number) {
   const key = keyFor("water", date);
@@ -57,6 +63,7 @@ export async function addWater(date: string, deltaOz: number) {
     body: JSON.stringify({ date, deltaOz }),
   });
   await mutate(key);
+  void triggerPeakStateRecompute(date);
 }
 
 // ── WEIGHT ──────────────────────────────────────────────────────────────────
@@ -107,6 +114,7 @@ export async function setMood(date: string, value: number) {
     body: JSON.stringify({ date, value }),
   });
   await mutate(key);
+  void triggerPeakStateRecompute(date);
 }
 
 // ── ENERGY (per period) ─────────────────────────────────────────────────────
@@ -144,6 +152,7 @@ export async function setEnergy(
     body: JSON.stringify({ date, period, value }),
   });
   await mutate(key);
+  void triggerPeakStateRecompute(date);
 }
 export async function clearEnergy(date: string, period: EnergyPeriod) {
   const key = keyFor("energy", date);
