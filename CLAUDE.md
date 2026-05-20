@@ -154,6 +154,7 @@ const c = metricColors("sleep");
 | `hrv` | `--mc-hrv` | indigo (shares sleep) |
 | `rhr` | `--mc-rhr` | coral (#F87171) |
 | `cardio` | `--mc-cardio` | rose-300 (#FDA4AF) — Weekly Cardio Load |
+| `peak` | `--mc-peak` / `--mc-peak-gradient` | teal-300 (#5EEAD4) solid + violet→mint gradient for the Peak State ring |
 
 **Streak tiers** — `streakTier(n)` returns `{ color, glow, showFlame }`. Bronze ≥3, orange ≥7, gold ≥30.
 

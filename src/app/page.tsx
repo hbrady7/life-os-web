@@ -17,6 +17,7 @@ import { haptic } from "@/lib/haptics";
 import { maybeAutoSync } from "@/lib/integrations/google-health/sync-client";
 import { VitalsTier } from "@/components/today/vitals";
 import { CardioLoadCard } from "@/components/today/cardio-load/cardio-load-card";
+import { PeakStateHero } from "@/components/today/peak-state/peak-state-hero";
 
 export default function Page() {
   React.useEffect(() => {
@@ -64,6 +65,7 @@ function DaySurface() {
       style={{ touchAction: "pan-y" }}
     >
       <Screen>
+        {!isFuture && <PeakStateHero />}
         {!isFuture && <VitalsTier />}
         {!isFuture && <CardioLoadCard />}
         <MorningBriefing />

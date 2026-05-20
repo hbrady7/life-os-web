@@ -88,6 +88,15 @@
   --mc-cardio-2: #FECDD3;       /* rose-200 — lighter sibling for gradient highlights */
   --mc-cardio-soft: rgba(253, 164, 175, 0.14);
 
+  /* Peak State — the synthesized hero score. Mint (teal-300) is the
+   * solid; the ring uses a violet → mint gradient to communicate
+   * "fusion of all systems" without competing with any single metric
+   * color. Distinct from --color-success (emerald-400) on purpose. */
+  --mc-peak: #5EEAD4;            /* teal-300 */
+  --mc-peak-2: #99F6E4;          /* teal-200 */
+  --mc-peak-soft: rgba(94, 234, 212, 0.14);
+  --mc-peak-gradient: linear-gradient(135deg, #818CF8 0%, #5EEAD4 100%);
+
   /* Streak tier colors */
   --streak-amber: #F59E0B;
   --streak-orange: #FB923C;

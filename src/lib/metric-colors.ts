@@ -20,7 +20,8 @@ export type Metric =
   | "steps"
   | "hrv"
   | "rhr"
-  | "cardio";
+  | "cardio"
+  | "peak";
 
 export type MetricColors = {
   base: string;
@@ -93,6 +94,11 @@ const PALETTE: Record<Metric, MetricColors> = {
     base: "var(--mc-cardio)",
     light: "var(--mc-cardio-2)",
     soft: "var(--mc-cardio-soft)",
+  },
+  peak: {
+    base: "var(--mc-peak)",
+    light: "var(--mc-peak-2)",
+    soft: "var(--mc-peak-soft)",
   },
 };
 
