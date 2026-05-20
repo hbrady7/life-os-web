@@ -34,6 +34,20 @@ declare module "next-auth" {
   }
 }
 
+/**
+ * Auth.js v5 renamed the canonical env vars (AUTH_SECRET, AUTH_GITHUB_ID,
+ * AUTH_GITHUB_SECRET, AUTH_URL) but doesn't auto-fall-back to the v4
+ * names in every code path. Pass them explicitly with both-name
+ * fallbacks so existing GITHUB_ID / GITHUB_SECRET / NEXTAUTH_SECRET
+ * vars in Vercel continue to work — no rename required.
+ */
+const githubClientId =
+  process.env.AUTH_GITHUB_ID ?? process.env.GITHUB_ID;
+const githubClientSecret =
+  process.env.AUTH_GITHUB_SECRET ?? process.env.GITHUB_SECRET;
+const authSecret =
+  process.env.AUTH_SECRET ?? process.env.NEXTAUTH_SECRET;
+
 export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: DrizzleAdapter(db, {
     usersTable: users,
@@ -43,10 +57,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   }),
   providers: [
     GitHub({
-      clientId: process.env.GITHUB_ID,
-      clientSecret: process.env.GITHUB_SECRET,
+      clientId: githubClientId,
+      clientSecret: githubClientSecret,
     }),
   ],
+  secret: authSecret,
   session: { strategy: "jwt" },
   callbacks: {
     async jwt({ token, user }) {
@@ -64,7 +79,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   pages: {
     signIn: "/signin",
   },
-  // Required when `NEXTAUTH_URL` doesn't match the request host (Vercel
-  // preview deployments, mobile testing through ngrok, etc.).
+  // Trust the Vercel host header so the OAuth callback URL resolves
+  // correctly on preview deployments + the production rust-named domain.
   trustHost: true,
 });
