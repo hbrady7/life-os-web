@@ -574,6 +574,41 @@ export const cardioLoadLogs = pgTable(
 );
 
 // ─────────────────────────────────────────────────────────────────────────────
+// PEAK STATE — synthesized daily readiness score.
+// One row per (user, date); recomputed throughout the day as inputs land.
+// ─────────────────────────────────────────────────────────────────────────────
+
+export const peakStateLogs = pgTable(
+  "peak_state_logs",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    date: pgDate("date").notNull(),
+    peakState: integer("peak_state"),
+    recovery: integer("recovery"),
+    strain: integer("strain"),
+    lifestyle: integer("lifestyle"),
+    /** "go_hard" | "maintain" | "train_normal" | "easy_session" |
+     *  "active_recovery" | "full_rest" — see lib/peak-state/compute.ts. */
+    recommendation: text("recommendation"),
+    /** Full contributors array — labels, values, signed impacts. JSON
+     * because the row is read as one blob and the shape evolves with
+     * the formula. */
+    contributors: jsonb("contributors").notNull().default(sql`'[]'::jsonb`),
+    availableInputs: integer("available_inputs").default(0).notNull(),
+    /** Wall clock of the last compute() call. Used by the trigger to
+     * decide whether the row is stale (older than 1h → recompute). */
+    computedAt: timestamp("computed_at", { mode: "date" }).defaultNow().notNull(),
+  },
+  (t) => [
+    uniqueIndex("peak_state_logs_user_date_uq").on(t.userId, t.date),
+    index("peak_state_logs_user_date_idx").on(t.userId, t.date),
+  ]
+);
+
+// ─────────────────────────────────────────────────────────────────────────────
 // BODY MEASUREMENTS + PHOTOS METADATA (photo bytes stay in IndexedDB)
 // ─────────────────────────────────────────────────────────────────────────────
 
