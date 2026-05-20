@@ -15,7 +15,14 @@ import {
   type SyncedDataPoint,
 } from "@/lib/integrations/google-health/adapter";
 import type { DateStr } from "@/lib/types";
+import { getCurrentUser } from "@/lib/auth-server";
+import { setRestingHeartRate } from "@/lib/data/metrics";
+import {
+  getProvenanceRange,
+  setSynced,
+} from "@/lib/data/integrations";
 
+export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 function dateNDaysAgo(n: number): DateStr {
@@ -38,6 +45,11 @@ type SyncRequest = {
 };
 
 export async function POST(req: NextRequest) {
+  const user = await getCurrentUser();
+  if (!user) {
+    return NextResponse.json({ error: "unauthenticated" }, { status: 401 });
+  }
+
   let body: SyncRequest = {};
   try {
     body = (await req.json()) as SyncRequest;
@@ -96,10 +108,57 @@ export async function POST(req: NextRequest) {
   }
 
   const updates = mergeByDate(...sources);
+  const syncedAtDate = new Date();
+
+  // Persist RHR to Neon so the Daily Pulse card + drill-in chart see
+  // synced values across devices. Other metrics still flow client-side
+  // into Zustand via /lib/integrations/google-health/sync-client.ts —
+  // server-side persistence for those is a separate follow-up.
+  //
+  // Honors the manual-override-wins rule: if the user logged RHR
+  // manually after the most recent sync, skip overwriting on this run.
+  const provenance = await getProvenanceRange(
+    user.id,
+    "google_health",
+    startDate,
+    endDate
+  );
+  const overrideByDate = new Map<string, Date>();
+  for (const p of provenance) {
+    if (p.field !== "restingHeartRate" || !p.manualOverrideAt) continue;
+    if (!p.syncedAt || p.manualOverrideAt > p.syncedAt) {
+      overrideByDate.set(p.date, p.manualOverrideAt);
+    }
+  }
+
+  let rhrPersisted = 0;
+  for (const u of updates) {
+    const bpm = u.fields.restingHeartRate;
+    if (bpm == null) continue;
+    if (overrideByDate.has(u.date)) continue;
+    try {
+      await setRestingHeartRate(user.id, u.date, bpm);
+      await setSynced(
+        user.id,
+        "google_health",
+        u.date,
+        "restingHeartRate",
+        syncedAtDate
+      );
+      rhrPersisted += 1;
+    } catch (e) {
+      // Don't fail the whole sync on one bad row — surface in partialErrors.
+      errors.push(
+        `rhr persist ${u.date}: ${e instanceof Error ? e.message : "unknown"}`
+      );
+    }
+  }
+
   return NextResponse.json({
     updates,
-    syncedAt: new Date().toISOString(),
+    syncedAt: syncedAtDate.toISOString(),
     range: { startDate, endDate },
+    persisted: { restingHeartRate: rhrPersisted },
     partialErrors: errors.length ? errors : undefined,
   });
 }
