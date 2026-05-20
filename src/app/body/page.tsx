@@ -17,6 +17,7 @@ import { round1, uid, cn } from "@/lib/utils";
 import { haptic } from "@/lib/haptics";
 import { compressImage, deletePhoto, getPhoto, putPhoto } from "@/lib/photo-store";
 import { DailyWeightCard } from "@/components/body/daily-weight-card";
+import { PhotoSessionsCard } from "@/components/body/photo-sessions-card";
 
 export default function BodyPage() {
   const body = useBodyRaw();
@@ -38,6 +39,8 @@ export default function BodyPage() {
        *  weight_logs). The richer measurement+notes+photo entries below
        *  remain on the Zustand body-measurements path. */}
       <DailyWeightCard />
+
+      <PhotoSessionsCard />
 
       <Card>
         <CardHeader>

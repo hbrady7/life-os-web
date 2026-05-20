@@ -650,6 +650,34 @@ export const bodyPhotos = pgTable(
   (t) => [index("body_photos_user_date_idx").on(t.userId, t.date)]
 );
 
+/**
+ * Body composition photo sessions — recurring 1st + 15th cadence. Each
+ * session groups several photos (front / side / back, but any subset
+ * is fine — captures aren't blocked). The actual JPEGs stay in
+ * IndexedDB; photoKeys jsonb is an array of
+ *   { key: string; angle: "front" | "side" | "back" | null; takenAt: string }
+ * referencing the IDB blob keys.
+ *
+ * `date` is the target the session is attributed to (the 1st or 15th
+ * nearest the actual capture). `captureDate` is when the user really
+ * took the photos. Same value when on-time; differs for late captures.
+ */
+export const bodyPhotoSessions = pgTable(
+  "body_photo_sessions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    date: pgDate("date").notNull(),
+    captureDate: pgDate("capture_date").notNull(),
+    photoKeys: jsonb("photo_keys").notNull().default(sql`'[]'::jsonb`),
+    notes: text("notes"),
+    createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
+  },
+  (t) => [index("body_photo_sessions_user_date_idx").on(t.userId, t.date)]
+);
+
 // ─────────────────────────────────────────────────────────────────────────────
 // JOURNAL — voice/manual/etc. Audio bytes stay in IndexedDB.
 // ─────────────────────────────────────────────────────────────────────────────
