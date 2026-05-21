@@ -31,7 +31,14 @@ export default async function SignInPage({
         </div>
 
         {config.ready ? (
-          <SignInButton callbackUrl={callbackUrl} />
+          <div className="space-y-3">
+            {config.googleReady && (
+              <SignInButton callbackUrl={callbackUrl} provider="google" />
+            )}
+            {config.githubReady && (
+              <SignInButton callbackUrl={callbackUrl} provider="github" />
+            )}
+          </div>
         ) : (
           <div
             role="alert"
@@ -85,8 +92,8 @@ export default async function SignInPage({
             On iOS &amp; using Life OS as a home-screen app?
           </p>
           <p>
-            Sign-in may open in Safari. After you authorize GitHub, reopen
-            the Life OS icon — your session will be active.
+            Sign-in may open in Safari. After you authorize the provider,
+            reopen the Life OS icon — your session will be active.
           </p>
         </div>
       </div>

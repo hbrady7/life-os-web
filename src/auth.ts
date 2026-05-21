@@ -17,6 +17,7 @@
 
 import NextAuth, { type DefaultSession } from "next-auth";
 import GitHub from "next-auth/providers/github";
+import Google from "next-auth/providers/google";
 import { DrizzleAdapter } from "@auth/drizzle-adapter";
 import { db } from "@/lib/db";
 import {
@@ -53,6 +54,14 @@ const githubClientSecret =
   process.env.AUTH_GITHUB_SECRET ||
   process.env.GITHUB_SECRET ||
   process.env.GITHUB_CLIENT_SECRET;
+const googleClientId =
+  process.env.AUTH_GOOGLE_ID ||
+  process.env.GOOGLE_ID ||
+  process.env.GOOGLE_CLIENT_ID;
+const googleClientSecret =
+  process.env.AUTH_GOOGLE_SECRET ||
+  process.env.GOOGLE_SECRET ||
+  process.env.GOOGLE_CLIENT_SECRET;
 const authSecret =
   process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET;
 
@@ -77,15 +86,20 @@ export type AuthConfigCheck = {
    * this even though we use JWT sessions — it writes users/accounts on
    * first sign-in. Missing → "Configuration" error during OAuth callback. */
   databaseUrlPresent: boolean;
+  /** Per-provider readiness so the signin page can render only the
+   * buttons whose creds are present. */
+  githubReady: boolean;
+  googleReady: boolean;
 };
 
 export function checkAuthConfig(): AuthConfigCheck {
   const missing: string[] = [];
-  if (!githubClientId) {
-    missing.push("AUTH_GITHUB_ID / GITHUB_ID / GITHUB_CLIENT_ID");
-  }
-  if (!githubClientSecret) {
-    missing.push("AUTH_GITHUB_SECRET / GITHUB_SECRET / GITHUB_CLIENT_SECRET");
+  const githubReady = !!(githubClientId && githubClientSecret);
+  const googleReady = !!(googleClientId && googleClientSecret);
+  if (!githubReady && !googleReady) {
+    missing.push(
+      "At least one provider: AUTH_GITHUB_ID/SECRET or AUTH_GOOGLE_ID/SECRET"
+    );
   }
   if (!authSecret) missing.push("AUTH_SECRET / NEXTAUTH_SECRET");
 
@@ -99,7 +113,7 @@ export function checkAuthConfig(): AuthConfigCheck {
   if (!databaseUrlPresent) missing.push("DATABASE_URL / DATABASE_URL_UNPOOLED");
 
   const authEnvKeysPresent = Object.keys(process.env)
-    .filter((k) => /^(AUTH_|NEXTAUTH_|GITHUB_|DATABASE_)/.test(k))
+    .filter((k) => /^(AUTH_|NEXTAUTH_|GITHUB_|GOOGLE_|DATABASE_)/.test(k))
     .filter((k) => {
       const v = process.env[k];
       return typeof v === "string" && v.length > 0;
@@ -111,6 +125,8 @@ export function checkAuthConfig(): AuthConfigCheck {
     missing,
     authEnvKeysPresent,
     databaseUrlPresent,
+    githubReady,
+    googleReady,
   };
 }
 
@@ -122,10 +138,28 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     verificationTokensTable: verificationTokens,
   }),
   providers: [
-    GitHub({
-      clientId: githubClientId,
-      clientSecret: githubClientSecret,
-    }),
+    ...(githubClientId && githubClientSecret
+      ? [
+          GitHub({
+            clientId: githubClientId,
+            clientSecret: githubClientSecret,
+          }),
+        ]
+      : []),
+    ...(googleClientId && googleClientSecret
+      ? [
+          Google({
+            clientId: googleClientId,
+            clientSecret: googleClientSecret,
+            authorization: {
+              params: {
+                prompt: "select_account",
+                access_type: "offline",
+              },
+            },
+          }),
+        ]
+      : []),
   ],
   secret: authSecret,
   session: { strategy: "jwt" },

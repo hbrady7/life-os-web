@@ -4,23 +4,26 @@ import * as React from "react";
 import { LogIn, Loader2 } from "lucide-react";
 
 /**
- * Client wrapper around a plain HTML form that POSTs to the Auth.js
- * signin endpoint. The previous JS-driven approach (fetch CSRF → build
- * form → call form.submit()) could leave the spinner stuck on iOS
- * standalone PWAs when the redirect to GitHub broke out into Safari —
- * the React component never unmounted because the PWA tab still showed
- * the original page.
- *
- * A real <form action="..."> submission is a top-level navigation in
- * every browser, including iOS PWAs. The browser handles the 302 to
- * GitHub natively and unloads this page. No spinner-stuck state.
- *
- * The hidden csrfToken input is the only thing this component needs to
- * fetch — Auth.js validates the token on the POST handler. We hide the
- * button until the token arrives so users can't click into a CSRF
- * failure during the brief fetch window.
+ * Real <form> POST to the Auth.js signin endpoint. Top-level navigation
+ * works inside iOS-standalone PWAs (where a JS-driven fetch+spinner
+ * could get stuck when GitHub/Google opened in Safari and never closed
+ * the original tab).
  */
-export function SignInButton({ callbackUrl }: { callbackUrl: string }) {
+
+type Provider = "github" | "google";
+
+const LABEL: Record<Provider, string> = {
+  github: "Continue with GitHub",
+  google: "Continue with Google",
+};
+
+export function SignInButton({
+  callbackUrl,
+  provider = "github",
+}: {
+  callbackUrl: string;
+  provider?: Provider;
+}) {
   const [csrfToken, setCsrfToken] = React.useState<string | null>(null);
   const [csrfError, setCsrfError] = React.useState<string | null>(null);
 
@@ -49,7 +52,7 @@ export function SignInButton({ callbackUrl }: { callbackUrl: string }) {
 
   return (
     <div>
-      <form method="POST" action="/api/auth/signin/github">
+      <form method="POST" action={`/api/auth/signin/${provider}`}>
         <input type="hidden" name="csrfToken" value={csrfToken ?? ""} />
         <input type="hidden" name="callbackUrl" value={callbackUrl} />
         <button
@@ -58,14 +61,11 @@ export function SignInButton({ callbackUrl }: { callbackUrl: string }) {
           className="w-full h-12 rounded-xl bg-[var(--color-accent-strong)] text-white font-medium inline-flex items-center justify-center gap-2 shadow-[var(--shadow-glow)] active:scale-[0.98] transition disabled:opacity-70"
         >
           {csrfToken ? <LogIn size={18} /> : <Loader2 size={18} className="animate-spin" />}
-          Continue with GitHub
+          {LABEL[provider]}
         </button>
       </form>
       {csrfError && (
-        <p
-          role="alert"
-          className="mt-3 text-[12px] text-[var(--color-danger)]"
-        >
+        <p role="alert" className="mt-3 text-[12px] text-[var(--color-danger)]">
           Sign-in setup failed: {csrfError}. Try refreshing the page.
         </p>
       )}
