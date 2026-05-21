@@ -4,6 +4,7 @@ import * as React from "react";
 import { motion, PanInfo } from "motion/react";
 import { Screen } from "@/components/screen";
 import { TodayHeader } from "@/components/today/header";
+import { AttentionTicker } from "@/components/today/attention-ticker";
 import { MorningBriefing } from "@/components/today/morning-briefing";
 import { MorningRoutine } from "@/components/today/morning-routine";
 import { EveningRoutine } from "@/components/today/evening-routine";
@@ -84,6 +85,7 @@ function DaySurface() {
       >
         <Screen>
           {!isFuture && <PhotoDayBanner placement="today" />}
+          {!isFuture && <AttentionTicker />}
           {!isFuture && <PeakStateHero />}
           {!isFuture && <VitalsTier />}
           {!isFuture && <CardioLoadCard />}
@@ -101,9 +103,15 @@ function DaySurface() {
 function PresentOrPastBody() {
   return (
     <>
-      <MorningRoutine />
-      <Goals />
-      <EveningRoutine />
+      <div id="anchor-morning" style={{ scrollMarginTop: "5rem" }}>
+        <MorningRoutine />
+      </div>
+      <div id="anchor-goals" style={{ scrollMarginTop: "5rem" }}>
+        <Goals />
+      </div>
+      <div id="anchor-evening" style={{ scrollMarginTop: "5rem" }}>
+        <EveningRoutine />
+      </div>
       <ReflectionCard />
     </>
   );
