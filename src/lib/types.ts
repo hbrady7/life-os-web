@@ -163,6 +163,21 @@ export type LiftSession = {
 };
 
 /**
+ * Short-lived in-progress lift session. Client-only Zustand state (per-tap
+ * mutation; persisted to localStorage so a closed PWA mid-workout doesn't
+ * lose state). On finish, written to /api/data/workouts as a LiftSession.
+ */
+export type ActiveWorkoutSession = {
+  id: string;
+  startedAt: string;        // ISO
+  lastSetAt?: string;       // ISO
+  workoutType?: string;
+  exercises: LiftExercise[];
+  restTargetSeconds?: number;
+  restDismissedAt?: string; // ISO
+};
+
+/**
  * Workout type was originally a narrow union but the Gym page lets users
  * pick from dayTypePresets (or type their own), so we treat this as an
  * open string. Common presets: Push, Pull, Legs, Cardio, Yoga, Other.

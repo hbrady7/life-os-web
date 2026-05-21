@@ -102,6 +102,23 @@
   --streak-orange: #FB923C;
   --streak-gold: #FCD34D;
 
+  /* Pillar palette (Whoop-style) — for pillar-tiles, strain-target, sleep-need */
+  --pillar-recovery: #16C47F;
+  --pillar-recovery-2: #5BE3A1;
+  --pillar-recovery-soft: rgba(22, 196, 127, 0.14);
+  --pillar-strain: #38BDF8;
+  --pillar-strain-2: #7DD3FC;
+  --pillar-strain-soft: rgba(56, 189, 248, 0.14);
+  --pillar-sleep: #8B5CF6;
+  --pillar-sleep-2: #A78BFA;
+  --pillar-sleep-soft: rgba(139, 92, 246, 0.14);
+
+  /* Readiness brackets — for ReadinessChip and readiness-hero */
+  --readiness-optimal: #16C47F;
+  --readiness-green: #34D399;
+  --readiness-yellow: #FBBF24;
+  --readiness-red: #FB7185;
+
   --radius-card: 1.25rem;
   --radius-control: 0.75rem;
   --radius-pill: 9999px;
