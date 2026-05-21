@@ -14,11 +14,15 @@ import { DailyStrainCard } from "@/components/today/daily-strain-card";
 import { ReflectionCard } from "@/components/today/reflection";
 import { WeeklyReviewCard } from "@/components/today/weekly-review-card";
 import { PatternCard } from "@/components/today/pattern-card";
+import { DashboardHero } from "@/components/today/dashboard-hero";
+import { FuelCard } from "@/components/today/fuel-card";
+import { ChartsBand } from "@/components/today/charts-band";
+import { StrainTargetCard } from "@/components/today/strain-target-card";
+import { SleepNeedCard } from "@/components/today/sleep-need-card";
 import { DayProvider, useDay } from "@/components/today/day-context";
 import { useStore } from "@/store";
 import { haptic } from "@/lib/haptics";
 import { maybeAutoSync } from "@/lib/integrations/google-health/sync-client";
-import { VitalsTier } from "@/components/today/vitals";
 import { CardioLoadCard } from "@/components/today/cardio-load/cardio-load-card";
 import { PeakStateHero } from "@/components/today/peak-state/peak-state-hero";
 import { PhotoDayBanner } from "@/components/body/photo-day-banner";
@@ -86,13 +90,18 @@ function DaySurface() {
         style={{ touchAction: "pan-y" }}
       >
         <Screen>
+          <TodayHeader />
           {!isFuture && <PhotoDayBanner placement="today" />}
           {!isFuture && <AttentionTicker />}
-          {!isFuture && <PeakStateHero />}
-          {!isFuture && <VitalsTier />}
+          {!isFuture && <DashboardHero />}
+          {!isFuture && <StrainTargetCard />}
+          {!isFuture && <SleepNeedCard />}
+          {!isFuture && <ChartsBand />}
+          {!isFuture && <FuelCard />}
+          {!isFuture && <DailyStrainCard />}
           {!isFuture && <CardioLoadCard />}
+          {!isFuture && <PeakStateHero />}
           <MorningBriefing />
-          <TodayHeader />
           <WeeklyReviewCard />
           <PatternCard />
           {isFuture ? <FutureBody /> : <PresentOrPastBody />}
@@ -112,7 +121,6 @@ function PresentOrPastBody() {
         <Goals />
       </div>
       <TodayRoutineCard />
-      <DailyStrainCard />
       <div id="anchor-evening" style={{ scrollMarginTop: "5rem" }}>
         <EveningRoutine />
       </div>
