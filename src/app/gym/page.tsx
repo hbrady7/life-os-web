@@ -10,7 +10,7 @@ import {
   Tooltip,
   CartesianGrid,
 } from "recharts";
-import { ChevronDown, Plus, Trash2, TrendingUp, Trophy, Sparkles, Settings as SettingsIcon, X } from "lucide-react";
+import { ChevronDown, Dumbbell, Plus, Trash2, TrendingUp, Trophy, Sparkles, Settings as SettingsIcon, X } from "lucide-react";
 import { Screen } from "@/components/screen";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -20,6 +20,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Segmented } from "@/components/ui/segmented";
 import { Slider } from "@/components/ui/slider";
+import { ActiveWorkoutPage } from "@/components/workout/active-workout-page";
+import { RoutineEditor } from "@/components/workout/routine-editor";
+import { DetectedSessionCard } from "@/components/workout/detected-session-card";
+import { useWorkoutRoutines } from "@/lib/hooks/use-workout-routines";
+import { liftSessionsToCsv, downloadCsv } from "@/lib/csv-export";
 import { useStore } from "@/store";
 import {
   LiftExercise,
@@ -61,15 +66,28 @@ export default function GymPage() {
   const liftSessions = useStore((s) => s.liftSessions);
   const removeLiftSession = useStore((s) => s.removeLiftSession);
   const removeWorkout = useStore((s) => s.removeWorkout);
+  const activeWorkout = useStore((s) => s.activeWorkout);
+  const startActiveWorkout = useStore((s) => s.startActiveWorkout);
   const unified = useUnifiedGymSessions();
+  const { routines } = useWorkoutRoutines();
 
   const [pasteOpen, setPasteOpen] = React.useState(false);
+  const [activePageOpen, setActivePageOpen] = React.useState(false);
+  const [routineEditor, setRoutineEditor] = React.useState<{ open: boolean; routineId?: string }>(
+    { open: false }
+  );
   const [deleteTarget, setDeleteTarget] = React.useState<{
     liftSessionId?: string;
     workoutId?: string;
     date: string;
   } | null>(null);
   const [metric, setMetric] = React.useState<Metric>("top");
+
+  const handleStartWorkout = () => {
+    haptic("tap");
+    if (!activeWorkout) startActiveWorkout();
+    setActivePageOpen(true);
+  };
 
   // Progress charts — unchanged: pure from liftSessions
   const byExercise = React.useMemo(() => {
@@ -125,10 +143,108 @@ export default function GymPage() {
       title="Gym"
       subtitle="Type + duration + sets, all on one screen. Paste from RepCount."
     >
-      <Button onClick={() => setPasteOpen(true)} className="w-full" size="lg">
-        <Plus size={16} />
-        New session
+      <Button onClick={handleStartWorkout} className="w-full" size="lg">
+        <Dumbbell size={18} />
+        {activeWorkout ? "Continue workout" : "Start workout"}
       </Button>
+
+      <DetectedSessionCard />
+
+      {routines.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Routines</CardTitle>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => setRoutineEditor({ open: true })}
+            >
+              <Plus size={14} />
+              New
+            </Button>
+          </CardHeader>
+          <ul className="space-y-2">
+            {routines.map((r) => (
+              <li
+                key={r.id}
+                className={cn(
+                  "flex items-center gap-3 rounded-[var(--radius-control)] p-3",
+                  "bg-[var(--color-elevated)] border border-[var(--color-stroke)]"
+                )}
+              >
+                <span className="text-lg">{r.icon ?? "💪"}</span>
+                <div className="min-w-0 flex-1">
+                  <div className="text-sm font-medium truncate">{r.name}</div>
+                  <div className="text-[11px] text-[var(--color-fg-3)] tnum">
+                    {r.exercises.length} exercise
+                    {r.exercises.length === 1 ? "" : "s"}
+                  </div>
+                </div>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => setRoutineEditor({ open: true, routineId: r.id })}
+                >
+                  Edit
+                </Button>
+                <Button
+                  size="sm"
+                  variant="soft"
+                  onClick={() => {
+                    haptic("tap");
+                    useStore.getState().startWorkoutFromTemplate(r);
+                    setActivePageOpen(true);
+                  }}
+                  disabled={!!activeWorkout}
+                >
+                  Start
+                </Button>
+              </li>
+            ))}
+          </ul>
+        </Card>
+      )}
+
+      {routines.length === 0 && (
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setRoutineEditor({ open: true })}
+          className="w-full"
+        >
+          <Plus size={14} />
+          Create your first routine
+        </Button>
+      )}
+
+      <details className="text-xs text-[var(--color-fg-3)]">
+        <summary className="cursor-pointer select-none">More tools</summary>
+        <div className="mt-2 flex flex-col gap-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setPasteOpen(true)}
+          >
+            <Plus size={14} />
+            Paste from RepCount
+          </Button>
+          {liftSessions.length > 0 && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                haptic("tap");
+                downloadCsv(
+                  `life-os-workouts-${todayStr()}.csv`,
+                  liftSessionsToCsv(liftSessions)
+                );
+              }}
+            >
+              Export CSV
+            </Button>
+          )}
+        </div>
+      </details>
 
       {byExercise.length > 0 && (
         <Card>
@@ -204,6 +320,17 @@ export default function GymPage() {
       <NewSessionModal
         open={pasteOpen}
         onClose={() => setPasteOpen(false)}
+      />
+
+      <ActiveWorkoutPage
+        open={activePageOpen}
+        onClose={() => setActivePageOpen(false)}
+      />
+
+      <RoutineEditor
+        open={routineEditor.open}
+        routineId={routineEditor.routineId ?? null}
+        onClose={() => setRoutineEditor({ open: false })}
       />
 
       <ConfirmModal

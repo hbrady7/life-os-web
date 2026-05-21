@@ -11,11 +11,13 @@ import { fromDateStr } from "@/lib/date";
 import { haptic } from "@/lib/haptics";
 import { cn } from "@/lib/utils";
 import type { WorkoutRoutine } from "@/lib/types";
+import { ActiveWorkoutPage } from "@/components/workout/active-workout-page";
 
 export function TodayRoutineCard() {
   const { date, isFuture } = useDay();
   const { routines } = useWorkoutRoutines();
   const activeWorkout = useStore((s) => s.activeWorkout);
+  const [pageOpen, setPageOpen] = React.useState(false);
 
   const dayOfWeek = React.useMemo(() => fromDateStr(date).getDay(), [date]);
 
@@ -33,7 +35,7 @@ export function TodayRoutineCard() {
   const handleStart = (routine: WorkoutRoutine) => {
     haptic("success");
     useStore.getState().startWorkoutFromTemplate(routine);
-    // TODO: navigate to /gym/active once the active-workout page lands (Phase 3).
+    setPageOpen(true);
   };
 
   return (
@@ -75,10 +77,16 @@ export function TodayRoutineCard() {
       </div>
 
       {activeWorkout && (
-        <div className="text-[10px] text-[var(--color-fg-3)]">
-          A workout is already in progress.
-        </div>
+        <button
+          type="button"
+          onClick={() => setPageOpen(true)}
+          className="text-[10px] text-[var(--color-fg-3)] underline-offset-2 hover:underline"
+        >
+          A workout is already in progress · tap to resume
+        </button>
       )}
+
+      <ActiveWorkoutPage open={pageOpen} onClose={() => setPageOpen(false)} />
     </motion.div>
   );
 }
