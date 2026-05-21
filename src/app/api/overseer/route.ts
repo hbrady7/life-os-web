@@ -1,6 +1,8 @@
 import { GoogleGenAI } from "@google/genai";
 import { PERSONA_SYSTEM, buildContextBlock } from "@/lib/prompts";
 import { resolveGeminiApiKey } from "@/lib/gemini-key";
+import { getCurrentUser } from "@/lib/auth-server";
+import { listFacts } from "@/lib/data/user-facts";
 import type { OverseerContext } from "@/store/selectors";
 
 export const runtime = "nodejs";
@@ -49,8 +51,25 @@ export async function POST(req: Request) {
 
   const ai = new GoogleGenAI({ apiKey });
 
+  // Persisted user facts — the long-term memory layer. Fetched per
+  // request because they change over time (the extractor route adds
+  // them in the background after each turn) and we want the latest
+  // ground truth in every system prompt.
+  const user = await getCurrentUser();
+  const facts = user ? await listFacts(user.id) : [];
+  const factsBlock = facts.length
+    ? facts.map((f) => `- ${f.value.text}`).join("\n")
+    : "(none yet)";
+
   const systemInstruction =
-    PERSONA_SYSTEM + "\n\n--- USER CONTEXT ---\n" + buildContextBlock(body.context);
+    PERSONA_SYSTEM +
+    "\n\n--- WHAT YOU REMEMBER ABOUT THIS USER ---\n" +
+    factsBlock +
+    "\n\n(These are durable facts the user has shared across past sessions. " +
+    "Reference them naturally when relevant; do not enumerate them or " +
+    "treat them as a checklist.)" +
+    "\n\n--- USER CONTEXT ---\n" +
+    buildContextBlock(body.context);
 
   const contents = body.messages
     .filter((m) => m.content.trim().length > 0)

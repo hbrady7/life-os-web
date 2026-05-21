@@ -117,6 +117,18 @@ export function Overseer() {
           )
         );
       }
+      // Fire-and-forget: pull any durable facts out of the user's
+      // message into the memory layer. We don't block the UI on this,
+      // don't notify on failure, and don't surface inserted facts —
+      // they appear in Settings → What I remember about you.
+      void fetch("/api/user-facts/extract", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userMessage: text,
+          assistantMessage: acc,
+        }),
+      }).catch(() => {});
     } catch (err) {
       if ((err as Error).name === "AbortError") return;
       const msg = err instanceof Error ? err.message : "Something broke.";
