@@ -17,6 +17,11 @@ const PUBLIC_PATHS = [
   // to be reachable mid-OAuth-handshake. The handler itself enforces
   // its own session check.
   "/api/fitbit/callback",
+  // Vercel's cron scheduler hits this with no session cookie — it has
+  // its own bearer-token auth via CRON_SECRET, enforced inside the
+  // route handler. Without this whitelist the cron pings get bounced
+  // to /signin and the reminders never fire.
+  "/api/cron",
 ];
 
 export default auth((req) => {
