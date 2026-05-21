@@ -5,6 +5,9 @@ import { persist, createJSONStorage } from "zustand/middleware";
 import { todayStr } from "@/lib/date";
 import { shouldGenerateForDate, weekRangeFor } from "@/lib/recurrence";
 import { uid } from "@/lib/utils";
+import type { ExerciseCatalogEntry } from "@/lib/repcount-csv-import";
+
+export type CustomExerciseCatalog = Record<string, ExerciseCatalogEntry>;
 import {
   ActiveWorkoutSession,
   LiftExercise,
@@ -98,6 +101,12 @@ type State = {
   recurringGoals: RecurringGoal[];
   recurringGenerations: RecurringGoalGeneration[];
   liftSessions: LiftSession[];
+  /** Per-exercise catalog populated by the RepCount CSV importer. Tracks
+   *  the user's real exercise list with categories so the picker/search
+   *  surfaces what they actually do. Empty until an import runs. */
+  customExerciseCatalog: CustomExerciseCatalog;
+  /** ISO timestamp of the last RepCount CSV import, or null if never. */
+  liftSessionsImportedAt: string | null;
   activeWorkout: ActiveWorkoutSession | null;
   cachedPatterns?: CachedPatterns;
   dismissedPatterns: DismissedPattern[];
@@ -234,6 +243,15 @@ type Actions = {
   addLiftSession: (session: LiftSession) => void;
   removeLiftSession: (id: string) => void;
   updateLiftSession: (id: string, patch: Partial<LiftSession>) => void;
+  /** Atomic replace of the whole gym history — used by the RepCount CSV
+   *  importer. Idempotent: re-importing the same CSV swaps in the same
+   *  set of sessions, never duplicates. Also resets the custom catalog
+   *  + import timestamp. */
+  replaceLiftSessions: (
+    sessions: LiftSession[],
+    catalog: CustomExerciseCatalog,
+    importedAt: string
+  ) => void;
 
   // active workout (RepCount-mimic in-progress session)
   startActiveWorkout: (workoutType?: string) => void;
@@ -403,6 +421,8 @@ const initialState: State = {
   recurringGoals: [],
   recurringGenerations: [],
   liftSessions: [],
+  customExerciseCatalog: {},
+  liftSessionsImportedAt: null,
   activeWorkout: null,
   cachedPatterns: undefined,
   dismissedPatterns: [],
@@ -1135,6 +1155,12 @@ export const useStore = create<State & Actions>()(
             x.id === id ? { ...x, ...patch } : x
           ),
         })),
+      replaceLiftSessions: (sessions, catalog, importedAt) =>
+        set(() => ({
+          liftSessions: sessions,
+          customExerciseCatalog: catalog,
+          liftSessionsImportedAt: importedAt,
+        })),
 
       startActiveWorkout: (workoutType) =>
         set((s) => {
@@ -1764,6 +1790,8 @@ export const useStore = create<State & Actions>()(
             recurringGoals: s.recurringGoals,
             recurringGenerations: s.recurringGenerations,
             liftSessions: s.liftSessions,
+            customExerciseCatalog: s.customExerciseCatalog,
+            liftSessionsImportedAt: s.liftSessionsImportedAt,
             activeWorkout: s.activeWorkout,
             dismissedPatterns: s.dismissedPatterns,
             weeklyReviews: s.weeklyReviews,
@@ -1839,6 +1867,8 @@ export const useStore = create<State & Actions>()(
             recurringGoals: state.recurringGoals ?? [],
             recurringGenerations: state.recurringGenerations ?? [],
             liftSessions: state.liftSessions ?? [],
+            customExerciseCatalog: state.customExerciseCatalog ?? {},
+            liftSessionsImportedAt: state.liftSessionsImportedAt ?? null,
             activeWorkout: state.activeWorkout ?? null,
             dismissedPatterns: state.dismissedPatterns ?? [],
             weeklyReviews: state.weeklyReviews ?? [],
@@ -1944,6 +1974,10 @@ export const useStore = create<State & Actions>()(
           recurringGenerations:
             p.recurringGenerations ?? current.recurringGenerations,
           liftSessions: p.liftSessions ?? current.liftSessions,
+          customExerciseCatalog:
+            p.customExerciseCatalog ?? current.customExerciseCatalog,
+          liftSessionsImportedAt:
+            p.liftSessionsImportedAt ?? current.liftSessionsImportedAt,
           activeWorkout:
             "activeWorkout" in p ? p.activeWorkout ?? null : current.activeWorkout,
           cachedPatterns: p.cachedPatterns ?? current.cachedPatterns,

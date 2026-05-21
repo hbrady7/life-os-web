@@ -55,6 +55,7 @@ import { round1 } from "@/lib/utils";
 import { haptic } from "@/lib/haptics";
 import { cn } from "@/lib/utils";
 import { useUnifiedGymSessions } from "@/store/selectors";
+import { ImportRepCountModal } from "@/components/gym/import-repcount-modal";
 
 type Metric = "top" | "e1rm" | "volume";
 
@@ -74,6 +75,7 @@ export default function GymPage() {
   const { routines } = useWorkoutRoutines();
 
   const [pasteOpen, setPasteOpen] = React.useState(false);
+  const [importOpen, setImportOpen] = React.useState(false);
   const [activePageOpen, setActivePageOpen] = React.useState(false);
   const [routineEditor, setRoutineEditor] = React.useState<{ open: boolean; routineId?: string }>(
     { open: false }
@@ -232,6 +234,17 @@ export default function GymPage() {
             <Plus size={14} />
             Paste from RepCount
           </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              haptic("tap");
+              setImportOpen(true);
+            }}
+          >
+            <Plus size={14} />
+            Import from RepCount (CSV)
+          </Button>
           {liftSessions.length > 0 && (
             <Button
               variant="ghost"
@@ -324,6 +337,11 @@ export default function GymPage() {
       <NewSessionModal
         open={pasteOpen}
         onClose={() => setPasteOpen(false)}
+      />
+
+      <ImportRepCountModal
+        open={importOpen}
+        onClose={() => setImportOpen(false)}
       />
 
       <ActiveWorkoutPage
