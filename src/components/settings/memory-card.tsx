@@ -17,7 +17,6 @@ type FactRow = {
 };
 
 const KEY = "/api/user-facts";
-const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
 /**
  * Renders the persistent memory the Overseer has gathered about the
@@ -27,14 +26,19 @@ const fetcher = (url: string) => fetch(url).then((r) => r.json());
  * memory directly without going through a chat turn.
  */
 export function MemoryCard() {
-  const { data, mutate, isLoading } = useSWR<FactRow[]>(KEY, fetcher);
+  // Use the global SWR fetcher from SwrProvider — it throws on non-2xx
+  // so SWR's error state actually fires instead of swallowing an error
+  // body as successful data (which would crash facts.map below).
+  const { data, mutate, isLoading } = useSWR<FactRow[]>(KEY);
   const [editing, setEditing] = React.useState<string | null>(null);
   const [editText, setEditText] = React.useState("");
   const [adding, setAdding] = React.useState(false);
   const [newText, setNewText] = React.useState("");
   const [pending, setPending] = React.useState(false);
 
-  const facts = data ?? [];
+  // Defend against IDB cache poisoning + transient mid-flight errors:
+  // only render data when it's actually an array.
+  const facts = Array.isArray(data) ? data : [];
 
   const startEdit = (f: FactRow) => {
     setEditing(f.key);
