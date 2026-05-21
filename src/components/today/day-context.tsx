@@ -54,7 +54,7 @@ export function DayProvider({ children }: { children: React.ReactNode }) {
   const today = todayStr();
   const isToday = date === today;
   const isPast = date < today;
-  const isFuture = false; // forward navigation removed
+  const isFuture = false; // forward beyond today is permanently disabled
   const minDate = shiftDate(today, -daysBack);
 
   const value: DayCtx = {
@@ -68,7 +68,8 @@ export function DayProvider({ children }: { children: React.ReactNode }) {
     daysBack,
     daysForward,
     canGoBack: date > minDate,
-    canGoForward: false,
+    // Forward is allowed when looking at the past — caps at today.
+    canGoForward: !isToday,
   };
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
