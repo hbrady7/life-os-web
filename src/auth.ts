@@ -89,10 +89,14 @@ export function checkAuthConfig(): AuthConfigCheck {
   }
   if (!authSecret) missing.push("AUTH_SECRET / NEXTAUTH_SECRET");
 
+  // Either pooled or unpooled is acceptable at runtime — the db client
+  // falls back from one to the other. Only flag missing if neither is set.
   const databaseUrlPresent = Boolean(
-    process.env.DATABASE_URL && process.env.DATABASE_URL.length > 0
+    (process.env.DATABASE_URL && process.env.DATABASE_URL.length > 0) ||
+      (process.env.DATABASE_URL_UNPOOLED &&
+        process.env.DATABASE_URL_UNPOOLED.length > 0)
   );
-  if (!databaseUrlPresent) missing.push("DATABASE_URL");
+  if (!databaseUrlPresent) missing.push("DATABASE_URL / DATABASE_URL_UNPOOLED");
 
   const authEnvKeysPresent = Object.keys(process.env)
     .filter((k) => /^(AUTH_|NEXTAUTH_|GITHUB_|DATABASE_)/.test(k))

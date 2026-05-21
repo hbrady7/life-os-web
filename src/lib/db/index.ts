@@ -31,10 +31,16 @@ import * as schema from "./schema";
 const BUILD_TIME_PLACEHOLDER_URL =
   "postgresql://build-time-placeholder:placeholder@build.local/placeholder";
 
-// Use `||` so an empty-string env var (Vercel sometimes injects "") also
-// falls through to the placeholder. The placeholder only matters at
-// build time when DATABASE_URL hasn't been wired into the build scope.
-const url = process.env.DATABASE_URL || BUILD_TIME_PLACEHOLDER_URL;
+// Pooled URL preferred for serverless perf, but Neon's unpooled (direct)
+// URL works fine at runtime too — just less efficient under concurrent
+// load. Vercel's Neon integration injects DATABASE_URL_UNPOOLED by
+// default but only sets DATABASE_URL if the user opts in to the pooler.
+// Falling back keeps sign-in working either way. Placeholder kicks in
+// at build time when neither is wired into the build scope.
+const url =
+  process.env.DATABASE_URL ||
+  process.env.DATABASE_URL_UNPOOLED ||
+  BUILD_TIME_PLACEHOLDER_URL;
 const sql = neon(url);
 export const db = drizzle(sql, { schema });
 export type DB = typeof db;
