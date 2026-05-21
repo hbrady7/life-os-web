@@ -679,6 +679,38 @@ export const bodyPhotoSessions = pgTable(
 );
 
 // ─────────────────────────────────────────────────────────────────────────────
+// PUSH SUBSCRIPTIONS — one row per (user, device). The browser-emitted
+// subscription object is split into endpoint + p256dh + auth on insert.
+// `endpoint` is globally unique (it embeds the push-service-assigned id),
+// so we treat it as the natural primary key for upserts.
+//
+// Per-subscription opt-ins (`dailyWeightEnabled`, `photoDayEnabled`) let
+// the user mute a class of reminders without losing the subscription
+// itself — useful when they only want photo-day nudges, not daily
+// weight ones. Both default true; the Settings card toggles them.
+// ─────────────────────────────────────────────────────────────────────────────
+
+export const pushSubscriptions = pgTable(
+  "push_subscriptions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    endpoint: text("endpoint").notNull().unique(),
+    p256dh: text("p256dh").notNull(),
+    auth: text("auth").notNull(),
+    dailyWeightEnabled: boolean("daily_weight_enabled").default(true).notNull(),
+    photoDayEnabled: boolean("photo_day_enabled").default(true).notNull(),
+    /** UA string at subscribe time — useful when debugging which device
+     *  on the user's account is misbehaving. Never shown in the UI. */
+    userAgent: text("user_agent"),
+    createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
+  },
+  (t) => [index("push_subscriptions_user_idx").on(t.userId)]
+);
+
+// ─────────────────────────────────────────────────────────────────────────────
 // JOURNAL — voice/manual/etc. Audio bytes stay in IndexedDB.
 // ─────────────────────────────────────────────────────────────────────────────
 

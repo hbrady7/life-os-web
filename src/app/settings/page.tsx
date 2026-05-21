@@ -14,6 +14,7 @@ import { ManageRecurringModal } from "@/components/today/recurring-manage-modal"
 import { GoogleHealthCard } from "@/components/settings/google-health-card";
 import { AccountCard } from "@/components/settings/account-card";
 import { PeakStateCard } from "@/components/settings/peak-state-card";
+import { RemindersCard } from "@/components/settings/reminders-card";
 import { useStore } from "@/store";
 import { AccentColor } from "@/lib/types";
 import { haptic } from "@/lib/haptics";
@@ -257,6 +258,8 @@ export default function SettingsPage() {
       <VoiceJournalSettingsCard />
 
       <RecurringGoalsSettingsCard />
+
+      <RemindersCard />
 
       <React.Suspense fallback={null}>
         <GoogleHealthCard />

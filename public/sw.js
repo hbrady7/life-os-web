@@ -58,3 +58,61 @@ self.addEventListener("fetch", (event) => {
     })
   );
 });
+
+// ─────────────────────────────────────────────────────────────────────
+// Push notifications. Payload shape matches lib/web-push.ts PushPayload:
+//   { title, body, url?, tag? }
+// We tolerate a missing/malformed payload (some push services fire a
+// "wake" event with no body) by falling back to a generic banner.
+// ─────────────────────────────────────────────────────────────────────
+self.addEventListener("push", (event) => {
+  let payload = { title: "Life OS", body: "", url: "/", tag: "life-os" };
+  try {
+    if (event.data) {
+      const parsed = event.data.json();
+      payload = { ...payload, ...parsed };
+    }
+  } catch (e) {
+    // Non-JSON payload — show a generic notification rather than dropping.
+  }
+  event.waitUntil(
+    self.registration.showNotification(payload.title, {
+      body: payload.body,
+      tag: payload.tag,
+      icon: "/icon-192.png",
+      badge: "/icon-192.png",
+      data: { url: payload.url || "/" },
+    })
+  );
+});
+
+// Tap a notification → focus existing tab if there is one, else open.
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const target = (event.notification.data && event.notification.data.url) || "/";
+  event.waitUntil(
+    (async () => {
+      const all = await self.clients.matchAll({
+        type: "window",
+        includeUncontrolled: true,
+      });
+      for (const client of all) {
+        const url = new URL(client.url);
+        if (url.origin === self.location.origin && "focus" in client) {
+          await client.focus();
+          if ("navigate" in client) {
+            try {
+              await client.navigate(target);
+            } catch (e) {
+              // navigate() can fail cross-origin / on detached docs; ignore.
+            }
+          }
+          return;
+        }
+      }
+      if (self.clients.openWindow) {
+        await self.clients.openWindow(target);
+      }
+    })()
+  );
+});
