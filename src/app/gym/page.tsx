@@ -56,6 +56,7 @@ import { haptic } from "@/lib/haptics";
 import { cn } from "@/lib/utils";
 import { useUnifiedGymSessions } from "@/store/selectors";
 import { ImportRepCountModal } from "@/components/gym/import-repcount-modal";
+import { GymInsightsSection } from "@/components/gym/gym-insights-section";
 
 type Metric = "top" | "e1rm" | "volume";
 
@@ -291,6 +292,8 @@ export default function GymPage() {
           </div>
         </Card>
       )}
+
+      <GymInsightsSection />
 
       <Card>
         <CardHeader>
