@@ -880,6 +880,129 @@ export const integrationProvenance = pgTable(
 );
 
 // ─────────────────────────────────────────────────────────────────────────────
+// BEHAVIORS — Whoop-style daily journal for next-day correlation.
+// Daily-singleton row; UPSERT on conflict (user_id, date).
+// ─────────────────────────────────────────────────────────────────────────────
+
+export const behaviors = pgTable(
+  "behaviors",
+  {
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    date: pgDate("date").notNull(),
+    caffeineMg: real("caffeine_mg"),
+    alcoholDrinks: real("alcohol_drinks"),
+    lateMeal: boolean("late_meal"),
+    screenTimeMinBeforeBed: real("screen_time_min_before_bed"),
+    stressLevel: real("stress_level"),
+    meditationMin: real("meditation_min"),
+    cardioMin: real("cardio_min"),
+    saunaMin: real("sauna_min"),
+    coldExposureMin: real("cold_exposure_min"),
+    notes: text("notes"),
+    updatedAt: timestamp("updated_at", { mode: "date" }).defaultNow().notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.date] })]
+);
+
+// ─────────────────────────────────────────────────────────────────────────────
+// RECIPES — MyFitnessPal-style reusable meals. Ingredients live in jsonb
+// because the shape is small and read-as-blob client-side; one row per recipe.
+// ─────────────────────────────────────────────────────────────────────────────
+
+export const recipes = pgTable(
+  "recipes",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    icon: text("icon"),
+    servings: real("servings").default(1).notNull(),
+    ingredients: jsonb("ingredients").notNull().default(sql`'[]'::jsonb`),
+    caloriesPerServing: real("calories_per_serving").default(0).notNull(),
+    proteinPerServing: real("protein_per_serving"),
+    carbsPerServing: real("carbs_per_serving"),
+    fatPerServing: real("fat_per_serving"),
+    fiberPerServing: real("fiber_per_serving"),
+    notes: text("notes"),
+    createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
+  },
+  (t) => [index("recipes_user_idx").on(t.userId)]
+);
+
+// ─────────────────────────────────────────────────────────────────────────────
+// FASTING WINDOWS — IF tracking. Active window has endedAt=null; history
+// rows have it set.
+// ─────────────────────────────────────────────────────────────────────────────
+
+export const fastingWindows = pgTable(
+  "fasting_windows",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    startedAt: timestamp("started_at", { mode: "date" }).notNull(),
+    endedAt: timestamp("ended_at", { mode: "date" }),
+    targetHours: real("target_hours").default(16).notNull(),
+    notes: text("notes"),
+  },
+  (t) => [index("fasting_user_idx").on(t.userId)]
+);
+
+// ─────────────────────────────────────────────────────────────────────────────
+// WORKOUT HR SERIES — intra-workout HR samples synced from Google Health.
+// Keyed by lift_sessions.id so deletion cascades naturally.
+// ─────────────────────────────────────────────────────────────────────────────
+
+export const workoutHrSeries = pgTable("workout_hr_series", {
+  sessionId: uuid("session_id")
+    .primaryKey()
+    .references(() => liftSessions.id, { onDelete: "cascade" }),
+  userId: text("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  startedAt: timestamp("started_at", { mode: "date" }).notNull(),
+  endedAt: timestamp("ended_at", { mode: "date" }).notNull(),
+  /** HRSample[] — { at: ISO, bpm: number }. */
+  samples: jsonb("samples").notNull().default(sql`'[]'::jsonb`),
+  peakBpm: integer("peak_bpm"),
+  avgBpm: integer("avg_bpm"),
+  caloriesBurned: real("calories_burned"),
+  zoneMinutes: jsonb("zone_minutes"),
+  syncedAt: timestamp("synced_at", { mode: "date" }).defaultNow().notNull(),
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// WORKOUT ROUTINES — saved templates (Push/Pull/Legs/…). Exercises +
+// optional planned sets stored as jsonb. scheduledDays = number[] (0=Sun)
+// for the "Today's routine" surfacing on Gym.
+// ─────────────────────────────────────────────────────────────────────────────
+
+export const workoutRoutines = pgTable(
+  "workout_routines",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    icon: text("icon"),
+    notes: text("notes"),
+    /** TemplateExerciseEntry[] = { name, notes?, plannedSets?: PlannedSet[] } */
+    exercises: jsonb("exercises").notNull().default(sql`'[]'::jsonb`),
+    /** Day-of-week schedule, 0=Sun..6=Sat. Null/empty = unscheduled. */
+    scheduledDays: jsonb("scheduled_days"),
+    order: integer("order").default(0).notNull(),
+    createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
+  },
+  (t) => [index("workout_routines_user_idx").on(t.userId)]
+);
+
+// ─────────────────────────────────────────────────────────────────────────────
 // RELATIONS — drizzle uses these for the typed query builder.
 // ─────────────────────────────────────────────────────────────────────────────
 

@@ -125,6 +125,18 @@ export type LiftSet = {
   weight: number; // lb (0 means bodyweight)
   reps: number;
   order: number;
+  /** RPE 1-10 (rate of perceived exertion). Surfaced via the set row drawer. */
+  rpe?: number;
+  /** Free-text note for this set (form cue, pain, "1RM attempt"). */
+  notes?: string;
+  /**
+   * Active-workout-only: false = pre-filled "planned" row awaiting confirm,
+   * true = logged. Absence = treated as completed (back-compat). Finished
+   * LiftSessions only persist completed sets.
+   */
+  completed?: boolean;
+  /** Drop set marker — reduced weight + extra reps right after a top set. */
+  isDropSet?: boolean;
 };
 
 export type LiftExercise = {
@@ -133,6 +145,12 @@ export type LiftExercise = {
   /** Lowercased + trimmed name for matching across sessions. */
   normalizedName: string;
   sets: LiftSet[];
+  /** Routine-derived planned sets for the active workout (greyed hint rows). Discarded on finish. */
+  plannedSets?: PlannedSet[];
+  /** Per-exercise note from the routine or in-flight log. */
+  notes?: string;
+  /** Superset grouping — exercises sharing the same id render as one block. */
+  supersetGroupId?: string;
 };
 
 export type LiftSession = {
@@ -666,6 +684,10 @@ export type Settings = {
   weeklyReview: WeeklyReviewSettings;
   dayNavigation: DayNavigationSettings;
   gym: GymSettings;
+  /** Per-day macro / kcal targets — feeds MacroRings on /today and /nutrition. */
+  macroTargets?: MacroTargets;
+  /** Intermittent-fasting target window length + enabled flag. */
+  fasting?: FastingSettings;
 };
 
 export const DEFAULT_MORNING_ROUTINE: Array<{ name: string; icon: string }> = [
@@ -707,3 +729,155 @@ export const HABIT_TEMPLATES: Array<{ name: string; icon: HabitIcon }> = [
   { name: "No alcohol", icon: "leaf" },
   { name: "Strength training", icon: "dumbbell" },
 ];
+
+/* ---------- MACRO TARGETS + FASTING ---------- */
+
+export type MacroTargets = {
+  calories?: number;
+  protein?: number;
+  carbs?: number;
+  fat?: number;
+  fiber?: number;
+};
+
+export const DEFAULT_MACRO_TARGETS: MacroTargets = {
+  calories: 2400,
+  protein: 180,
+  carbs: 240,
+  fat: 80,
+  fiber: 35,
+};
+
+export type FastingSettings = {
+  enabled: boolean;
+  /** Target window length in hours (e.g. 16 for 16:8 IF). */
+  targetHours: number;
+};
+
+/* ---------- BEHAVIOR JOURNAL (Whoop-style next-day correlation) ---------- */
+
+export type BehaviorLog = {
+  date: DateStr;
+  caffeineMg?: number;
+  alcoholDrinks?: number;
+  lateMeal?: boolean;
+  screenTimeMinBeforeBed?: number;
+  stressLevel?: number;
+  meditationMin?: number;
+  cardioMin?: number;
+  saunaMin?: number;
+  coldExposureMin?: number;
+  notes?: string;
+};
+
+export const BEHAVIOR_FIELDS: Array<{
+  key: keyof BehaviorLog;
+  label: string;
+  unit: string;
+  numeric: boolean;
+  max?: number;
+  step?: number;
+  icon: string;
+}> = [
+  { key: "caffeineMg", label: "Caffeine", unit: "mg", numeric: true, max: 600, step: 50, icon: "coffee" },
+  { key: "alcoholDrinks", label: "Alcohol", unit: "drinks", numeric: true, max: 10, step: 1, icon: "wine" },
+  { key: "lateMeal", label: "Late meal", unit: "", numeric: false, icon: "utensils" },
+  { key: "screenTimeMinBeforeBed", label: "Pre-bed screens", unit: "min", numeric: true, max: 180, step: 15, icon: "smartphone" },
+  { key: "stressLevel", label: "Stress", unit: "/10", numeric: true, max: 10, step: 1, icon: "activity" },
+  { key: "meditationMin", label: "Meditation", unit: "min", numeric: true, max: 90, step: 5, icon: "brain" },
+  { key: "cardioMin", label: "Cardio", unit: "min", numeric: true, max: 180, step: 5, icon: "wind" },
+  { key: "saunaMin", label: "Sauna", unit: "min", numeric: true, max: 60, step: 5, icon: "flame" },
+  { key: "coldExposureMin", label: "Cold exposure", unit: "min", numeric: true, max: 30, step: 1, icon: "snowflake" },
+];
+
+/* ---------- RECIPES ---------- */
+
+export type RecipeIngredient = {
+  name: string;
+  quantity?: string;
+  calories: number;
+  protein?: number;
+  carbs?: number;
+  fat?: number;
+  fiber?: number;
+};
+
+export type Recipe = {
+  id: string;
+  name: string;
+  icon?: string;
+  servings: number;
+  ingredients: RecipeIngredient[];
+  caloriesPerServing: number;
+  proteinPerServing?: number;
+  carbsPerServing?: number;
+  fatPerServing?: number;
+  fiberPerServing?: number;
+  notes?: string;
+  createdAt: string;
+};
+
+/* ---------- FASTING WINDOWS ---------- */
+
+export type FastingWindow = {
+  id: string;
+  startedAt: string;
+  endedAt?: string;
+  targetHours: number;
+  notes?: string;
+};
+
+/* ---------- WORKOUT HEART RATE (Fitbit Air via Google Health) ---------- */
+
+export type HRSample = { at: string; bpm: number };
+
+export type ZoneMinutes = {
+  zone1: number;
+  zone2: number;
+  zone3: number;
+  zone4: number;
+  zone5: number;
+};
+
+export type WorkoutHRSeries = {
+  sessionId: string;
+  startedAt: string;
+  endedAt: string;
+  samples: HRSample[];
+  peakBpm?: number;
+  avgBpm?: number;
+  caloriesBurned?: number;
+  zoneMinutes?: ZoneMinutes;
+  syncedAt: string;
+};
+
+/* ---------- WORKOUT ROUTINES (Push/Pull/Legs templates) ---------- */
+
+export type PlannedSet = {
+  weight?: number;
+  reps?: number;
+  rpe?: number;
+  notes?: string;
+};
+
+export type TemplateExerciseEntry = {
+  name: string;
+  notes?: string;
+  plannedSets?: PlannedSet[];
+};
+
+export type WorkoutRoutine = {
+  id: string;
+  name: string;
+  icon?: string;
+  notes?: string;
+  exercises: TemplateExerciseEntry[];
+  scheduledDays?: number[];
+  order: number;
+  createdAt: string;
+};
+
+export const WEEK_DAY_SHORT_LABELS = ["S", "M", "T", "W", "T", "F", "S"] as const;
+export const WEEK_DAY_LABELS = [
+  "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday",
+] as const;
