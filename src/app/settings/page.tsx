@@ -16,6 +16,7 @@ import { AccountCard } from "@/components/settings/account-card";
 import { PeakStateCard } from "@/components/settings/peak-state-card";
 import { RemindersCard } from "@/components/settings/reminders-card";
 import { MemoryCard } from "@/components/settings/memory-card";
+import { DangerZoneCard } from "@/components/settings/danger-zone-card";
 import { useStore } from "@/store";
 import { AccentColor } from "@/lib/types";
 import { haptic } from "@/lib/haptics";
@@ -378,6 +379,8 @@ export default function SettingsPage() {
           You should export a JSON backup first if you want to keep this data.
         </p>
       </Modal>
+
+      <DangerZoneCard />
     </Screen>
   );
 }

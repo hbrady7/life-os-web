@@ -22,8 +22,17 @@ export const viewport: Viewport = {
   themeColor: "#050507",
   width: "device-width",
   initialScale: 1,
+  // maximumScale + userScalable disabled together prevents iOS double-tap
+  // zoom on layout that already meets contrast/size A11y guidelines. We
+  // still need viewportFit: cover for safe-area-inset-* to populate.
   maximumScale: 1,
+  userScalable: false,
   viewportFit: "cover",
+  // Tells iOS to *resize* the layout viewport when the on-screen keyboard
+  // shows up instead of just overlaying it — fixes inputs near the bottom
+  // getting hidden. Chrome/Android honors this hint via the
+  // VirtualKeyboard API too.
+  interactiveWidget: "resizes-content",
 };
 
 export default function RootLayout({
