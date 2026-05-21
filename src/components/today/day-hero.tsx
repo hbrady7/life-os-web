@@ -84,7 +84,7 @@ export function DayHero() {
         </div>
 
         {/* Three primary gauges */}
-        <div className="grid grid-cols-3 gap-1 px-3 pb-5">
+        <div className="grid grid-cols-3 gap-3 px-4 pb-5">
           <PillarGauge
             pillar={pillars.recovery}
             tone="var(--pillar-recovery)"
