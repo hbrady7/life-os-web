@@ -43,7 +43,7 @@ export default function Page() {
 }
 
 function DaySurface() {
-  const { isFuture, step, canGoBack, canGoForward } = useDay();
+  const { step, canGoBack, canGoForward } = useDay();
   const swipeEnabled = useStore((s) => s.settings.dayNavigation.swipeEnabled);
 
   const onPanEnd = (
@@ -91,20 +91,20 @@ function DaySurface() {
       >
         <Screen>
           <TodayHeader />
-          {!isFuture && <PhotoDayBanner placement="today" />}
-          {!isFuture && <AttentionTicker />}
-          {!isFuture && <DashboardHero />}
-          {!isFuture && <StrainTargetCard />}
-          {!isFuture && <SleepNeedCard />}
-          {!isFuture && <ChartsBand />}
-          {!isFuture && <FuelCard />}
-          {!isFuture && <DailyStrainCard />}
-          {!isFuture && <CardioLoadCard />}
-          {!isFuture && <PeakStateHero />}
+          <PhotoDayBanner placement="today" />
+          <AttentionTicker />
+          <DashboardHero />
+          <StrainTargetCard />
+          <SleepNeedCard />
+          <ChartsBand />
+          <FuelCard />
+          <DailyStrainCard />
+          <CardioLoadCard />
+          <PeakStateHero />
           <MorningBriefing />
           <WeeklyReviewCard />
           <PatternCard />
-          {isFuture ? <FutureBody /> : <PresentOrPastBody />}
+          <PresentOrPastBody />
         </Screen>
       </motion.div>
     </PullToRefresh>
@@ -129,14 +129,3 @@ function PresentOrPastBody() {
   );
 }
 
-/**
- * Future days only show planning surfaces. Recurring goals that *will*
- * generate on this date are surfaced in the Goals card itself.
- */
-function FutureBody() {
-  return (
-    <>
-      <Goals />
-    </>
-  );
-}

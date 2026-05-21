@@ -439,7 +439,7 @@ export type DayNavigationSettings = {
 
 export const DEFAULT_DAY_NAVIGATION_SETTINGS: DayNavigationSettings = {
   daysBack: 30,
-  daysForward: 7,
+  daysForward: 0,
   swipeEnabled: true,
 };
 

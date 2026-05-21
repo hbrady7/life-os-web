@@ -29,13 +29,17 @@ export function DayProvider({ children }: { children: React.ReactNode }) {
   const settings = useStore((s) => s.settings.dayNavigation);
   const [date, setDateRaw] = React.useState<DateStr>(() => todayStr());
 
+  // Forward navigation is disabled — "tomorrow" view added no value, just
+  // showed an empty 0% Goals card. Ignore any persisted daysForward and
+  // hard-cap at 0 so canGoForward stays false everywhere.
+  const daysForward = 0;
+  const daysBack = settings.daysBack;
+
   const setDate = React.useCallback(
     (d: DateStr) => {
-      setDateRaw(
-        clampDateWithin(d, settings.daysBack, settings.daysForward)
-      );
+      setDateRaw(clampDateWithin(d, daysBack, daysForward));
     },
-    [settings.daysBack, settings.daysForward]
+    [daysBack]
   );
 
   const step = React.useCallback(
@@ -50,9 +54,8 @@ export function DayProvider({ children }: { children: React.ReactNode }) {
   const today = todayStr();
   const isToday = date === today;
   const isPast = date < today;
-  const isFuture = date > today;
-  const minDate = shiftDate(today, -settings.daysBack);
-  const maxDate = shiftDate(today, settings.daysForward);
+  const isFuture = false; // forward navigation removed
+  const minDate = shiftDate(today, -daysBack);
 
   const value: DayCtx = {
     date,
@@ -62,10 +65,10 @@ export function DayProvider({ children }: { children: React.ReactNode }) {
     isToday,
     isPast,
     isFuture,
-    daysBack: settings.daysBack,
-    daysForward: settings.daysForward,
+    daysBack,
+    daysForward,
     canGoBack: date > minDate,
-    canGoForward: date < maxDate,
+    canGoForward: false,
   };
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
