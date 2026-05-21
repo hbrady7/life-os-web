@@ -53,7 +53,7 @@ export function Modal({
   return (
     <AnimatePresence>
       {open && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
+        <div className="fixed inset-0 z-[70] flex items-end sm:items-center justify-center">
           <motion.button
             type="button"
             aria-label="Close"
