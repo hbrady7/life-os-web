@@ -410,6 +410,34 @@ export const DEFAULT_DAY_NAVIGATION_SETTINGS: DayNavigationSettings = {
   swipeEnabled: true,
 };
 
+/* ---------- GYM / PROGRESSIVE OVERLOAD ---------- */
+
+/**
+ * Coaching defaults applied across all exercises. The per-exercise map
+ * keyed by `normalizedName` (LiftExercise.normalizedName) lets the user
+ * override any individual lift — e.g. dumbbell isolation goes up in
+ * 2.5lb jumps but the squat goes up 5lb.
+ */
+export type GymSettings = {
+  /** Once the top set hits this rep count, suggest adding weight. */
+  defaultTargetReps: number;
+  /** Default load increment in pounds. */
+  defaultIncrementLb: number;
+  perExercise: Record<
+    string,
+    {
+      targetReps?: number;
+      incrementLb?: number;
+    }
+  >;
+};
+
+export const DEFAULT_GYM_SETTINGS: GymSettings = {
+  defaultTargetReps: 8,
+  defaultIncrementLb: 2.5,
+  perExercise: {},
+};
+
 /* ---------- INTEGRATIONS: GOOGLE HEALTH ---------- */
 
 /** Which metric on a given day was last touched by sync vs by a manual log.
@@ -637,6 +665,7 @@ export type Settings = {
   insights: InsightsSettings;
   weeklyReview: WeeklyReviewSettings;
   dayNavigation: DayNavigationSettings;
+  gym: GymSettings;
 };
 
 export const DEFAULT_MORNING_ROUTINE: Array<{ name: string; icon: string }> = [

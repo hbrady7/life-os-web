@@ -10,7 +10,7 @@ import {
   Tooltip,
   CartesianGrid,
 } from "recharts";
-import { ChevronDown, Plus, Trash2, X } from "lucide-react";
+import { ChevronDown, Plus, Trash2, TrendingUp, Trophy, Sparkles, Settings as SettingsIcon, X } from "lucide-react";
 import { Screen } from "@/components/screen";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -34,6 +34,15 @@ import {
   topSet,
   totalVolume,
 } from "@/lib/repcount";
+import {
+  buildPrefillFromLast,
+  exercisePR,
+  isPRSession,
+  lastSessionFor,
+  resolveExerciseSettings,
+  suggestionFor,
+  type Suggestion,
+} from "@/lib/gym-coach";
 import { todayStr, format, fromDateStr } from "@/lib/date";
 import { round1 } from "@/lib/utils";
 import { haptic } from "@/lib/haptics";
@@ -140,6 +149,7 @@ export default function GymPage() {
             {byExercise.map(([key, { displayName, points }]) => (
               <ExerciseChart
                 key={key}
+                normalizedName={key}
                 name={displayName}
                 points={points}
                 metric={metric}
@@ -215,10 +225,12 @@ export default function GymPage() {
 }
 
 function ExerciseChart({
+  normalizedName,
   name,
   points,
   metric,
 }: {
+  normalizedName: string;
   name: string;
   points: Array<{
     date: string;
@@ -230,6 +242,35 @@ function ExerciseChart({
   }>;
   metric: Metric;
 }) {
+  const liftSessions = useStore((s) => s.liftSessions);
+  const gymSettings = useStore((s) => s.settings.gym);
+  const [settingsOpen, setSettingsOpen] = React.useState(false);
+
+  const settings = React.useMemo(
+    () =>
+      resolveExerciseSettings(
+        normalizedName,
+        {
+          targetReps: gymSettings.defaultTargetReps,
+          incrementLb: gymSettings.defaultIncrementLb,
+        },
+        gymSettings.perExercise
+      ),
+    [normalizedName, gymSettings]
+  );
+  const last = React.useMemo(
+    () => lastSessionFor(liftSessions, normalizedName),
+    [liftSessions, normalizedName]
+  );
+  const suggestion = React.useMemo(
+    () => suggestionFor(last, settings),
+    [last, settings]
+  );
+  const pr = React.useMemo(
+    () => exercisePR(liftSessions, normalizedName),
+    [liftSessions, normalizedName]
+  );
+
   const latest = points[points.length - 1];
   const first = points[0];
   const data = points.map((p) => ({
@@ -254,9 +295,18 @@ function ExerciseChart({
 
   return (
     <div className="rounded-xl border border-[var(--color-stroke)] bg-[var(--color-elevated)]/40 p-3">
-      <div className="flex items-baseline justify-between mb-1">
-        <span className="text-sm font-medium truncate">{name}</span>
-        <span className="text-xs tnum text-[var(--color-fg-2)]">
+      <div className="flex items-baseline justify-between mb-1 gap-2">
+        <span className="text-sm font-medium truncate flex items-center gap-1.5">
+          {name}
+          {pr && pr.topWeight > 0 && (
+            <Trophy
+              size={11}
+              className="text-[var(--color-warning)] shrink-0"
+              aria-label={`PR: ${pr.topWeight}×${pr.topReps}`}
+            />
+          )}
+        </span>
+        <span className="text-xs tnum text-[var(--color-fg-2)] flex items-center gap-2">
           {round1(latestV)}
           {metric === "top" || metric === "e1rm" ? " lb" : ""}
           {points.length > 1 && deltaPct != null && (
@@ -275,8 +325,23 @@ function ExerciseChart({
                 : ""}
             </span>
           )}
+          <button
+            type="button"
+            onClick={() => setSettingsOpen(true)}
+            aria-label="Coach settings"
+            className="h-7 w-7 -mr-1 grid place-items-center rounded-md text-[var(--color-fg-3)] hover:text-[var(--color-accent)]"
+          >
+            <SettingsIcon size={11} />
+          </button>
         </span>
       </div>
+      <CoachSuggestion suggestion={suggestion} />
+      {pr && pr.e1RM > 0 && (
+        <div className="text-[10px] text-[var(--color-fg-3)] mb-1 tnum">
+          PR: {pr.topWeight > 0 ? `${pr.topWeight}×${pr.topReps}` : `${pr.topReps} reps`}
+          {pr.e1RM > 0 && ` · e1RM ${round1(pr.e1RM)}lb`}
+        </div>
+      )}
       <div className="text-[10px] text-[var(--color-fg-3)] mb-1">
         {METRIC_LABEL[metric]} · {points.length} sessions
       </div>
@@ -327,7 +392,163 @@ function ExerciseChart({
           </LineChart>
         </ResponsiveContainer>
       </div>
+      <ExerciseCoachSettingsModal
+        open={settingsOpen}
+        onClose={() => setSettingsOpen(false)}
+        normalizedName={normalizedName}
+        displayName={name}
+        current={settings}
+        defaults={{
+          targetReps: gymSettings.defaultTargetReps,
+          incrementLb: gymSettings.defaultIncrementLb,
+        }}
+      />
     </div>
+  );
+}
+
+function CoachSuggestion({ suggestion }: { suggestion: Suggestion }) {
+  const Icon =
+    suggestion.kind === "graduate"
+      ? TrendingUp
+      : suggestion.kind === "push"
+      ? Sparkles
+      : Sparkles;
+  const tone =
+    suggestion.kind === "graduate"
+      ? "var(--color-success)"
+      : suggestion.kind === "push"
+      ? "var(--color-warning)"
+      : "var(--color-fg-3)";
+  return (
+    <div
+      className="mt-0.5 mb-1.5 text-[11px] inline-flex items-center gap-1.5"
+      style={{ color: tone }}
+    >
+      <Icon size={11} />
+      <span>{suggestion.message}</span>
+    </div>
+  );
+}
+
+function ExerciseCoachSettingsModal({
+  open,
+  onClose,
+  normalizedName,
+  displayName,
+  current,
+  defaults,
+}: {
+  open: boolean;
+  onClose: () => void;
+  normalizedName: string;
+  displayName: string;
+  current: { targetReps: number; incrementLb: number };
+  defaults: { targetReps: number; incrementLb: number };
+}) {
+  const setExSettings = useStore((s) => s.setGymExerciseSettings);
+  const overrideRow = useStore(
+    (s) => s.settings.gym.perExercise[normalizedName]
+  );
+  const [targetReps, setTargetReps] = React.useState(current.targetReps);
+  const [incrementLb, setIncrementLb] = React.useState(current.incrementLb);
+
+  React.useEffect(() => {
+    if (open) {
+      setTargetReps(current.targetReps);
+      setIncrementLb(current.incrementLb);
+    }
+  }, [open, current.targetReps, current.incrementLb]);
+
+  const save = () => {
+    const patch: { targetReps?: number; incrementLb?: number } = {};
+    // Only persist when the value differs from the global default — that
+    // way "reset to default" just clears the override row.
+    if (targetReps !== defaults.targetReps) patch.targetReps = targetReps;
+    if (incrementLb !== defaults.incrementLb) patch.incrementLb = incrementLb;
+    setExSettings(normalizedName, patch);
+    haptic("success");
+    onClose();
+  };
+
+  const resetToDefault = () => {
+    setExSettings(normalizedName, {
+      targetReps: undefined,
+      incrementLb: undefined,
+    });
+    haptic("warn");
+    onClose();
+  };
+
+  return (
+    <Modal
+      open={open}
+      onClose={onClose}
+      title={`Coach: ${displayName}`}
+      description="Per-exercise overrides for the progression target and load jump."
+      footer={
+        <div className="flex items-center justify-end gap-2">
+          {overrideRow ? (
+            <Button variant="ghost" onClick={resetToDefault}>
+              Reset to default
+            </Button>
+          ) : (
+            <Button variant="ghost" onClick={onClose}>
+              Cancel
+            </Button>
+          )}
+          <Button onClick={save}>Save</Button>
+        </div>
+      }
+    >
+      <div className="space-y-4">
+        <div>
+          <div className="label mb-2">
+            Target reps (top set){" "}
+            <span className="text-[var(--color-fg-3)] tnum normal-case">
+              default {defaults.targetReps}
+            </span>
+          </div>
+          <Input
+            type="number"
+            inputMode="numeric"
+            value={targetReps}
+            min={1}
+            max={30}
+            onChange={(e) => {
+              const n = parseInt(e.target.value, 10);
+              if (Number.isFinite(n)) setTargetReps(Math.max(1, Math.min(30, n)));
+            }}
+          />
+          <p className="mt-1 text-[11px] text-[var(--color-fg-3)]">
+            Hit this rep count on the top set → coach suggests adding weight.
+          </p>
+        </div>
+        <div>
+          <div className="label mb-2">
+            Load increment (lb){" "}
+            <span className="text-[var(--color-fg-3)] tnum normal-case">
+              default {defaults.incrementLb}
+            </span>
+          </div>
+          <Input
+            type="number"
+            inputMode="decimal"
+            step={0.5}
+            value={incrementLb}
+            min={0.5}
+            max={25}
+            onChange={(e) => {
+              const n = parseFloat(e.target.value);
+              if (Number.isFinite(n)) setIncrementLb(Math.max(0.5, Math.min(25, n)));
+            }}
+          />
+          <p className="mt-1 text-[11px] text-[var(--color-fg-3)]">
+            Jump size suggested when you graduate. Squat 5lb, isolation 2.5lb is typical.
+          </p>
+        </div>
+      </div>
+    </Modal>
   );
 }
 
@@ -463,7 +684,7 @@ function SessionRow({
 
           {/* Lift detail */}
           {liftSession?.exercises.map((ex) => (
-            <ExerciseDetail key={ex.id} ex={ex} />
+            <ExerciseDetail key={ex.id} ex={ex} sessionDate={date} />
           ))}
         </div>
       )}
@@ -471,13 +692,33 @@ function SessionRow({
   );
 }
 
-function ExerciseDetail({ ex }: { ex: LiftExercise }) {
+function ExerciseDetail({ ex, sessionDate }: { ex: LiftExercise; sessionDate: string }) {
   const top = topSet(ex.sets);
   const e1 = bestE1RM(ex.sets);
+  const liftSessions = useStore((s) => s.liftSessions);
+  const isPR = React.useMemo(
+    () => isPRSession(liftSessions, sessionDate, ex.normalizedName, ex.sets),
+    [liftSessions, sessionDate, ex.normalizedName, ex.sets]
+  );
   return (
     <div className="rounded-lg bg-[var(--color-card)] border border-[var(--color-stroke)] p-2.5">
-      <div className="flex items-center justify-between">
-        <span className="text-sm font-medium">{ex.name}</span>
+      <div className="flex items-center justify-between gap-2">
+        <span className="text-sm font-medium flex items-center gap-1.5">
+          {ex.name}
+          {isPR && (
+            <span
+              className="inline-flex items-center gap-1 h-5 px-1.5 rounded-full text-[10px] font-medium"
+              style={{
+                background: "color-mix(in srgb, var(--color-warning) 14%, transparent)",
+                color: "var(--color-warning)",
+              }}
+              title="Personal record on this session"
+            >
+              <Trophy size={9} />
+              PR
+            </span>
+          )}
+        </span>
         <span className="text-[10px] text-[var(--color-fg-3)] tnum">
           {top &&
             (top.weight > 0
@@ -522,6 +763,11 @@ function NewSessionModal({
   const addLiftSession = useStore((s) => s.addLiftSession);
   const upsertWorkoutForDate = useStore((s) => s.upsertWorkoutForDate);
   const dayTypePresets = useStore((s) => s.settings.dayTypePresets);
+  const liftSessions = useStore((s) => s.liftSessions);
+  const prefillTemplate = React.useMemo(
+    () => buildPrefillFromLast(liftSessions),
+    [liftSessions]
+  );
   const [raw, setRaw] = React.useState("");
   const [fallbackDate, setFallbackDate] = React.useState(todayStr());
   const [workoutType, setWorkoutType] = React.useState("");
@@ -637,7 +883,22 @@ function NewSessionModal({
         </div>
 
         <div>
-          <div className="label mb-2">Paste log (optional)</div>
+          <div className="flex items-center justify-between mb-2">
+            <div className="label">Paste log (optional)</div>
+            {prefillTemplate && !raw && (
+              <button
+                type="button"
+                onClick={() => {
+                  setRaw(prefillTemplate);
+                  haptic("tap");
+                }}
+                className="text-[11px] inline-flex items-center gap-1 text-[var(--color-accent)] hover:underline"
+              >
+                <Sparkles size={11} />
+                Use last session
+              </button>
+            )}
+          </div>
           <Textarea
             value={raw}
             onChange={(e) => setRaw(e.target.value)}

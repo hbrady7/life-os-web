@@ -10,6 +10,7 @@ import {
   DEFAULT_EVENING_ROUTINE,
   DEFAULT_EVENING_ROUTINE_SETTINGS,
   DEFAULT_DAY_NAVIGATION_SETTINGS,
+  DEFAULT_GYM_SETTINGS,
   DEFAULT_INSIGHTS_SETTINGS,
   DEFAULT_MORNING_ROUTINE,
   DEFAULT_MORNING_ROUTINE_SETTINGS,
@@ -46,6 +47,7 @@ import {
   CachedPatterns,
   DismissedPattern,
   DayNavigationSettings,
+  GymSettings,
   InsightsSettings,
   LiftSession,
   RecurringGoal,
@@ -245,6 +247,13 @@ type Actions = {
   // day navigation
   setDayNavSettings: (patch: Partial<DayNavigationSettings>) => void;
 
+  // gym / progressive overload
+  setGymSettings: (patch: Partial<GymSettings>) => void;
+  setGymExerciseSettings: (
+    normalizedName: string,
+    patch: { targetReps?: number; incrementLb?: number }
+  ) => void;
+
   // body measurements + photos
   addBodyMeasurement: (m: Omit<BodyMeasurement, "id" | "createdAt">) => void;
   updateBodyMeasurement: (id: string, patch: Partial<BodyMeasurement>) => void;
@@ -304,6 +313,7 @@ const defaultSettings = (): Settings => ({
   insights: { ...DEFAULT_INSIGHTS_SETTINGS },
   weeklyReview: { ...DEFAULT_WEEKLY_REVIEW_SETTINGS },
   dayNavigation: { ...DEFAULT_DAY_NAVIGATION_SETTINGS },
+  gym: { ...DEFAULT_GYM_SETTINGS },
 });
 
 function buildDefaultRoutine(
@@ -1192,6 +1202,39 @@ export const useStore = create<State & Actions>()(
           },
         })),
 
+      setGymSettings: (patch) =>
+        set((s) => ({
+          settings: {
+            ...s.settings,
+            gym: { ...s.settings.gym, ...patch },
+          },
+        })),
+
+      setGymExerciseSettings: (normalizedName, patch) =>
+        set((s) => {
+          // Clear an override by passing { targetReps: undefined, incrementLb: undefined }
+          // — we drop the row entirely when nothing remains so the user
+          // falls back to the global defaults next time.
+          const current =
+            s.settings.gym.perExercise[normalizedName] ?? {};
+          const next = { ...current, ...patch };
+          const cleaned: { targetReps?: number; incrementLb?: number } = {};
+          if (typeof next.targetReps === "number") cleaned.targetReps = next.targetReps;
+          if (typeof next.incrementLb === "number") cleaned.incrementLb = next.incrementLb;
+          const perExercise = { ...s.settings.gym.perExercise };
+          if (Object.keys(cleaned).length === 0) {
+            delete perExercise[normalizedName];
+          } else {
+            perExercise[normalizedName] = cleaned;
+          }
+          return {
+            settings: {
+              ...s.settings,
+              gym: { ...s.settings.gym, perExercise },
+            },
+          };
+        }),
+
       addBodyMeasurement: (m) =>
         set((s) => {
           const entry: BodyMeasurement = {
@@ -1406,6 +1449,12 @@ export const useStore = create<State & Actions>()(
                 ...DEFAULT_DAY_NAVIGATION_SETTINGS,
                 ...((state.settings as Partial<Settings>)?.dayNavigation ?? {}),
               },
+              gym: {
+                ...DEFAULT_GYM_SETTINGS,
+                ...((state.settings as Partial<Settings>)?.gym ?? {}),
+                perExercise:
+                  (state.settings as Partial<Settings>)?.gym?.perExercise ?? {},
+              },
             },
             days: state.days ?? {},
             goals: state.goals ?? [],
@@ -1509,6 +1558,14 @@ export const useStore = create<State & Actions>()(
             dayNavigation: {
               ...current.settings.dayNavigation,
               ...((p.settings as Partial<Settings>)?.dayNavigation ?? {}),
+            },
+            gym: {
+              ...current.settings.gym,
+              ...((p.settings as Partial<Settings>)?.gym ?? {}),
+              perExercise: {
+                ...current.settings.gym.perExercise,
+                ...(((p.settings as Partial<Settings>)?.gym?.perExercise) ?? {}),
+              },
             },
           },
           routine: p.routine ?? current.routine,
