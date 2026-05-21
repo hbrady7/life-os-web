@@ -5,6 +5,7 @@ import {
   buildContextBlock,
 } from "@/lib/prompts";
 import { resolveGeminiApiKey } from "@/lib/gemini-key";
+import { geminiErrorPlainResponse } from "@/lib/gemini-error";
 import type { OverseerContext } from "@/store/selectors";
 
 export const runtime = "nodejs";
@@ -27,7 +28,9 @@ export async function POST(req: Request) {
 
   try {
     const res = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
+      // flash-lite: short prose summary, well within lite's capability,
+      // and the 1000 RPD free tier keeps the daily quota out of reach.
+      model: "gemini-2.5-flash-lite",
       contents: [{ role: "user", parts: [{ text: EVENING_PROMPT }] }],
       config: {
         systemInstruction:
@@ -45,7 +48,6 @@ export async function POST(req: Request) {
       headers: { "Content-Type": "text/plain; charset=utf-8" },
     });
   } catch (err) {
-    const msg = err instanceof Error ? err.message : "Gemini call failed";
-    return new Response(msg, { status: 502 });
+    return geminiErrorPlainResponse(err, "summary");
   }
 }

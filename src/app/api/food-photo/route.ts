@@ -1,5 +1,6 @@
 import { GoogleGenAI } from "@google/genai";
 import { resolveGeminiApiKey, GEMINI_KEY_NAMES } from "@/lib/gemini-key";
+import { geminiErrorJsonResponse } from "@/lib/gemini-error";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -217,16 +218,7 @@ export async function POST(req: Request) {
     }
   } catch (err) {
     clearTimeout(timer);
-    const message =
-      err instanceof Error
-        ? err.name === "AbortError"
-          ? "Gemini call timed out after 30s."
-          : err.message
-        : "Gemini call failed.";
-    return Response.json(
-      { error: "gemini-failed", message },
-      { status: 502 }
-    );
+    return geminiErrorJsonResponse(err, "food_photo");
   } finally {
     clearTimeout(timer);
   }

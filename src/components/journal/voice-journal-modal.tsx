@@ -606,11 +606,24 @@ function ProcessingScreen({
           body: form,
         });
         if (!res.ok) {
+          // Route returns { error: "quota_exceeded" | "voice_journal_timeout"
+          // | "voice_journal_failed" | "missing-key" | ... }. Map the
+          // taxonomy to friendly copy — never display the raw body.
           const body = await res.json().catch(() => null);
-          onError(
-            (body && typeof body.message === "string" && body.message) ||
-              `Server returned ${res.status}.`
-          );
+          const tag = body && typeof body.error === "string" ? body.error : "";
+          let msg: string;
+          if (tag === "quota_exceeded") {
+            msg = "Daily AI quota reached. Try again later or type your entry.";
+          } else if (tag === "missing-key") {
+            msg = "Voice journal needs a GEMINI_API_KEY in the server env.";
+          } else if (tag === "voice_journal_timeout") {
+            msg = "Transcription took too long. Try a shorter clip.";
+          } else if (tag === "bad-output" || tag === "bad-request") {
+            msg = "Couldn't process that recording. Try again.";
+          } else {
+            msg = "Couldn't transcribe that recording. Try again.";
+          }
+          onError(msg);
           return;
         }
         const payload = (await res.json()) as VoiceJournalPayload & {
@@ -618,8 +631,8 @@ function ProcessingScreen({
         };
         haptic("success");
         onDone(payload);
-      } catch (err) {
-        onError(err instanceof Error ? err.message : "Network error.");
+      } catch {
+        onError("Network error. Check your connection and try again.");
       }
     })();
   }, [blob, onDone, onError]);

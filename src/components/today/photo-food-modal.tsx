@@ -476,18 +476,31 @@ function ProcessingScreen({
           body: form,
         });
         if (!res.ok) {
+          // Route returns { error: "quota_exceeded" | "food_photo_timeout"
+          // | "food_photo_failed" | "bad-request" | "missing-key" | ... }.
+          // Map the taxonomy to friendly copy — never display the raw body.
           const body = await res.json().catch(() => null);
-          onError(
-            (body && typeof body.message === "string" && body.message) ||
-              `Server returned ${res.status}.`
-          );
+          const tag = body && typeof body.error === "string" ? body.error : "";
+          let msg: string;
+          if (tag === "quota_exceeded") {
+            msg = "Daily AI quota reached. Try again later or log this meal manually.";
+          } else if (tag === "missing-key") {
+            msg = "Photo nutrition needs a GEMINI_API_KEY in the server env.";
+          } else if (tag === "food_photo_timeout") {
+            msg = "The AI took too long. Try a clearer photo, or log manually.";
+          } else if (tag === "bad-output" || tag === "bad-request") {
+            msg = "Couldn't read that photo. Try a clearer shot.";
+          } else {
+            msg = "Couldn't analyze that photo. Try again or log manually.";
+          }
+          onError(msg);
           return;
         }
         const payload = (await res.json()) as FoodPhotoPayload;
         haptic("success");
         onDone(payload);
-      } catch (err) {
-        onError(err instanceof Error ? err.message : "Network error.");
+      } catch {
+        onError("Network error. Check your connection and try again.");
       }
     })();
   }, [blob, hint, onDone, onError]);

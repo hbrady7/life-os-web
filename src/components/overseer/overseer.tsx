@@ -27,7 +27,10 @@ export function Overseer() {
   const [messages, setMessages] = React.useState<ChatMessage[]>([]);
   const [draft, setDraft] = React.useState("");
   const [streaming, setStreaming] = React.useState(false);
-  const [error, setError] = React.useState<null | { kind: "no-key" | "other"; msg: string }>(null);
+  const [error, setError] = React.useState<
+    | null
+    | { kind: "no-key" | "quota" | "other"; msg: string }
+  >(null);
   const abortRef = React.useRef<AbortController | null>(null);
   const scrollerRef = React.useRef<HTMLDivElement>(null);
 
@@ -99,9 +102,24 @@ export function Overseer() {
         setMessages((cur) => cur.filter((m) => m.id !== assistantId));
         return;
       }
+      if (res.status === 429) {
+        setError({
+          kind: "quota",
+          msg: "Daily AI quota reached. Try again later.",
+        });
+        setMessages((cur) => cur.filter((m) => m.id !== assistantId));
+        return;
+      }
       if (!res.ok || !res.body) {
-        const errText = await res.text().catch(() => "");
-        throw new Error(errText || `Request failed (${res.status})`);
+        // Route handlers return short tags like "overseer_failed" /
+        // "overseer_timeout". Never display the raw response body to the
+        // user — it can leak SDK JSON if the route ever changes shape.
+        setError({
+          kind: "other",
+          msg: "Something went wrong reaching Overseer. Try again in a moment.",
+        });
+        setMessages((cur) => cur.filter((m) => m.id !== assistantId));
+        return;
       }
 
       const reader = res.body.getReader();
@@ -131,8 +149,11 @@ export function Overseer() {
       }).catch(() => {});
     } catch (err) {
       if ((err as Error).name === "AbortError") return;
-      const msg = err instanceof Error ? err.message : "Something broke.";
-      setError({ kind: "other", msg });
+      // Network / parsing failure: friendly fallback, never raw error text.
+      setError({
+        kind: "other",
+        msg: "Couldn't reach Overseer. Check your connection and try again.",
+      });
       setMessages((cur) => cur.filter((m) => m.id !== assistantId));
     } finally {
       setStreaming(false);
@@ -222,6 +243,11 @@ export function Overseer() {
                   </>
                 )}
 
+                {error?.kind === "quota" && (
+                  <div className="text-xs text-[var(--color-warning)] bg-[color:color-mix(in_srgb,var(--color-warning)_10%,transparent)] border border-[color:color-mix(in_srgb,var(--color-warning)_30%,transparent)] rounded-xl px-3 py-2">
+                    {error.msg}
+                  </div>
+                )}
                 {error?.kind === "other" && (
                   <div className="text-xs text-[var(--color-danger)] bg-[color:color-mix(in_srgb,var(--color-danger)_10%,transparent)] border border-[color:color-mix(in_srgb,var(--color-danger)_30%,transparent)] rounded-xl px-3 py-2">
                     {error.msg}

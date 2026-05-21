@@ -5,6 +5,7 @@ import {
   buildContextBlock,
 } from "@/lib/prompts";
 import { resolveGeminiApiKey } from "@/lib/gemini-key";
+import { geminiErrorPlainResponse } from "@/lib/gemini-error";
 import type { OverseerContext } from "@/store/selectors";
 
 export const runtime = "nodejs";
@@ -52,13 +53,6 @@ export async function POST(req: Request) {
       headers: { "Content-Type": "text/plain; charset=utf-8" },
     });
   } catch (err) {
-    const raw = err instanceof Error ? err.message : "";
-    // The SDK surfaces 429s as Error.message containing the response JSON.
-    // Detect them and return a clean status so the client never shows raw
-    // Google API JSON to the user.
-    if (raw.includes('"code":429') || /RESOURCE_EXHAUSTED/.test(raw)) {
-      return new Response("quota_exceeded", { status: 429 });
-    }
-    return new Response("briefing_failed", { status: 502 });
+    return geminiErrorPlainResponse(err, "briefing");
   }
 }

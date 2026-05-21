@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { GoogleGenAI, Type } from "@google/genai";
 import { resolveGeminiApiKey } from "@/lib/gemini-key";
+import { classifyGeminiError } from "@/lib/gemini-error";
 import { withUserRequest } from "@/lib/api-helpers";
 import { insertFact, listFacts } from "@/lib/data/user-facts";
 
@@ -8,7 +9,11 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const maxDuration = 30;
 
-const MODEL = "gemini-2.5-flash";
+// flash-lite: this route fires fire-and-forget after every Overseer turn,
+// which on `flash` (20 RPD free tier) would burn through the whole daily
+// quota in a single chat session. Lite has 1000 RPD and easily handles
+// the small structured extraction task.
+const MODEL = "gemini-2.5-flash-lite";
 
 const EXTRACT_SYSTEM = `You extract DURABLE facts about a user from their messages to a coaching assistant. Durable means stable across sessions — true a month from now, not just today.
 
@@ -94,8 +99,11 @@ export async function POST(req: NextRequest) {
         },
       });
     } catch (err) {
-      console.error("[user-facts/extract] gemini call failed", err);
-      return { ok: false, error: "gemini_failed", inserted: [] };
+      // Fire-and-forget caller doesn't surface this — but tagging the
+      // classification gives us observability when reviewing server logs.
+      const kind = classifyGeminiError(err);
+      console.error(`[user-facts/extract] gemini ${kind}`, err);
+      return { ok: false, error: kind, inserted: [] };
     }
 
     const text = response.text ?? "";

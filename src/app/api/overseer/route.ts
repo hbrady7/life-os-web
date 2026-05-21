@@ -1,6 +1,10 @@
 import { GoogleGenAI } from "@google/genai";
 import { PERSONA_SYSTEM, buildContextBlock } from "@/lib/prompts";
 import { resolveGeminiApiKey } from "@/lib/gemini-key";
+import {
+  classifyGeminiError,
+  geminiErrorPlainResponse,
+} from "@/lib/gemini-error";
 import { getCurrentUser } from "@/lib/auth-server";
 import { listFacts } from "@/lib/data/user-facts";
 import type { OverseerContext } from "@/store/selectors";
@@ -90,8 +94,7 @@ export async function POST(req: Request) {
       },
     })) as unknown as AsyncIterable<StreamChunk>;
   } catch (err) {
-    const msg = err instanceof Error ? err.message : "Gemini call failed";
-    return new Response(msg, { status: 502 });
+    return geminiErrorPlainResponse(err, "overseer");
   }
 
   const encoder = new TextEncoder();
@@ -104,8 +107,15 @@ export async function POST(req: Request) {
         }
         controller.close();
       } catch (err) {
-        const msg = err instanceof Error ? err.message : "stream error";
-        controller.enqueue(encoder.encode(`\n[stream error: ${msg}]`));
+        // Mid-stream failure: we can't switch to an error Response (headers
+        // already flushed), so emit a sanitized inline marker. Never the
+        // raw SDK message — that would leak the Google API JSON.
+        const kind = classifyGeminiError(err);
+        const note =
+          kind === "quota_exceeded"
+            ? "\n\n[Daily AI quota reached. Try again later.]"
+            : "\n\n[Connection interrupted.]";
+        controller.enqueue(encoder.encode(note));
         controller.close();
       }
     },

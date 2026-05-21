@@ -1,5 +1,6 @@
 import { GoogleGenAI } from "@google/genai";
 import { resolveGeminiApiKey, GEMINI_KEY_NAMES } from "@/lib/gemini-key";
+import { geminiErrorJsonResponse } from "@/lib/gemini-error";
 import { fingerprintHeadline } from "@/lib/insights";
 import type { PatternInsight, PatternTone } from "@/lib/types";
 
@@ -152,13 +153,7 @@ export async function POST(req: Request) {
     }
   } catch (err) {
     clearTimeout(timer);
-    const message =
-      err instanceof Error
-        ? err.name === "AbortError"
-          ? "Gemini call timed out after 30s."
-          : err.message
-        : "Gemini call failed.";
-    return Response.json({ error: "gemini-failed", message }, { status: 502 });
+    return geminiErrorJsonResponse(err, "patterns");
   } finally {
     clearTimeout(timer);
   }
