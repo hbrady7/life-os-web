@@ -7,6 +7,7 @@ import { EnergyCurveCard } from "./energy-curve-card";
 import { MoodCheckinRow } from "./mood-checkin-row";
 import { PlannerCard } from "./planner-card";
 import { CaffeineCard } from "./caffeine-card";
+import { SupplementsCard } from "./supplements-card";
 
 export function VitalityClient() {
   // Vitality is "right now" — always pinned to actual today.
@@ -17,6 +18,7 @@ export function VitalityClient() {
       <EnergyCurveCard date={date} />
       <MoodCheckinRow date={date} />
       <CaffeineCard date={date} />
+      <SupplementsCard date={date} />
       <PlannerCard date={date} />
     </Screen>
   );
