@@ -31,3 +31,6 @@ drizzle/meta/_journal.json.bak
 *.log
 .idea
 .vscode
+
+# local data exports
+export_*.csv
