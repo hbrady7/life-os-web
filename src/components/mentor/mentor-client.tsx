@@ -16,6 +16,7 @@ import {
   createMemoryItem,
   deleteMemoryItem,
 } from "@/lib/hooks/use-memories";
+import { createIdeaItem } from "@/lib/hooks/use-ideas";
 
 type ChatMessage = { id: string; role: "user" | "assistant"; content: string };
 
@@ -252,7 +253,9 @@ const KIND_COLOR: Record<MemoryKind, string> = {
 };
 
 function TheVoid() {
-  const { memories } = useMemories();
+  const { memories: allMemories } = useMemories();
+  // Ideas captured here now route to the Mind board; don't list them in the void.
+  const memories = allMemories.filter((m) => m.kind !== "idea");
   const [text, setText] = React.useState("");
   const [kind, setKind] = React.useState<MemoryKind>("note");
 
@@ -261,7 +264,9 @@ function TheVoid() {
     if (!trimmed) return;
     haptic("success");
     setText("");
-    await createMemoryItem({ content: trimmed, kind });
+    // Ideas live on the Mind idea board, not in mentor memory.
+    if (kind === "idea") await createIdeaItem({ title: trimmed });
+    else await createMemoryItem({ content: trimmed, kind });
   };
 
   return (

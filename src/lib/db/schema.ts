@@ -1143,6 +1143,50 @@ export const planBlocks = pgTable(
 );
 
 // ─────────────────────────────────────────────────────────────────────────────
+// MIND — idea board, "smartest thing I heard" quotes, daily learnings.
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** Idea board — a real board (distinct from mentor memories). Idea captures
+ * from the mentor's quick-capture land here. */
+export const ideas = pgTable(
+  "ideas",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    title: text("title").notNull(),
+    body: text("body"),
+    status: text("status", {
+      enum: ["spark", "exploring", "parked", "shipped"],
+    })
+      .default("spark")
+      .notNull(),
+    tags: text("tags").array(),
+    createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { mode: "date" }).defaultNow().notNull(),
+  },
+  (t) => [index("ideas_user_idx").on(t.userId, t.createdAt)]
+);
+
+/** "Smartest thing I heard" — quotes worth keeping. */
+export const quotes = pgTable(
+  "quotes",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    text: text("text").notNull(),
+    saidBy: text("said_by"),
+    context: text("context"),
+    heardAt: pgDate("heard_at"),
+    createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
+  },
+  (t) => [index("quotes_user_idx").on(t.userId, t.createdAt)]
+);
+
+// ─────────────────────────────────────────────────────────────────────────────
 // RELATIONS — drizzle uses these for the typed query builder.
 // ─────────────────────────────────────────────────────────────────────────────
 

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Activity, BookOpen, Scale, Settings, Sparkles } from "lucide-react";
+import { Activity, Brain, BookOpen, Scale, Settings, Sparkles } from "lucide-react";
 
 /**
  * Mobile-only top bar — safe-area inset + a small icon row.
@@ -23,6 +23,9 @@ export function MobileTopBar() {
         </TopIcon>
         <TopIcon href="/vitality" label="Vitality">
           <Activity size={17} />
+        </TopIcon>
+        <TopIcon href="/mind" label="Mind">
+          <Brain size={17} />
         </TopIcon>
         <TopIcon href="/journal" label="Journal">
           <BookOpen size={17} />

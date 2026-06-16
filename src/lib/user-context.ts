@@ -22,6 +22,8 @@ import { getWorkoutForDate, listWorkouts } from "@/lib/data/workouts";
 import { listMemories } from "@/lib/data/memories";
 import { listCaffeineForDate } from "@/lib/data/caffeine";
 import { getSupplementSummary } from "@/lib/data/supplements";
+import { listIdeas } from "@/lib/data/ideas";
+import { listQuotes } from "@/lib/data/quotes";
 import { gatherPeakStateInputs } from "@/lib/peak-state/gather";
 import { computePeakState } from "@/lib/peak-state/compute";
 import { DEFAULT_MACRO_TARGETS, type MacroTargets } from "@/lib/types";
@@ -60,6 +62,8 @@ export type UserContext = {
   caffeine: { mgToday: number };
   supplements: { takenToday: number; total: number };
   memories: Array<{ content: string; kind: string }>;
+  ideas: Array<{ title: string; status: string }>;
+  quotes: Array<{ text: string; saidBy: string | null }>;
 };
 
 export async function getUserContext(
@@ -90,11 +94,14 @@ export async function getUserContext(
     readSleepRange(userId, date, date),
   ]);
 
-  const [memoryRows, caffeineToday, supplementSummary] = await Promise.all([
-    listMemories(userId, 12),
-    listCaffeineForDate(userId, date),
-    getSupplementSummary(userId, date),
-  ]);
+  const [memoryRows, caffeineToday, supplementSummary, ideaRows, quoteRows] =
+    await Promise.all([
+      listMemories(userId, 12),
+      listCaffeineForDate(userId, date),
+      getSupplementSummary(userId, date),
+      listIdeas(userId, 8),
+      listQuotes(userId, 5),
+    ]);
   const memories = memoryRows.map((m) => ({ content: m.content, kind: m.kind }));
   const caffeineMgToday = caffeineToday.reduce((a, c) => a + (c.mg ?? 0), 0);
 
@@ -181,6 +188,8 @@ export async function getUserContext(
     caffeine: { mgToday: caffeineMgToday },
     supplements: supplementSummary,
     memories,
+    ideas: ideaRows.map((i) => ({ title: i.title, status: i.status })),
+    quotes: quoteRows.map((q) => ({ text: q.text, saidBy: q.saidBy })),
   };
 }
 
@@ -203,6 +212,16 @@ export function renderUserContext(ctx: UserContext): string {
   const mem = ctx.memories.length
     ? ctx.memories.map((m) => `  - [${m.kind}] ${m.content}`).join("\n")
     : "  (none captured yet)";
+
+  const ideas = ctx.ideas.length
+    ? ctx.ideas.map((i) => `  - (${i.status}) ${i.title}`).join("\n")
+    : "  (none yet)";
+
+  const quotes = ctx.quotes.length
+    ? ctx.quotes
+        .map((q) => `  - "${q.text}"${q.saidBy ? ` — ${q.saidBy}` : ""}`)
+        .join("\n")
+    : "  (none yet)";
 
   const t = ctx.nutritionToday.targets;
 
@@ -243,6 +262,12 @@ export function renderUserContext(ctx: UserContext): string {
     "",
     "Recent memories (things the user told the mentor to remember):",
     mem,
+    "",
+    "Ideas the user is sitting on (idea board):",
+    ideas,
+    "",
+    "Quotes the user saved (smartest things they heard):",
+    quotes,
   ]
     .filter((l) => l !== "")
     .join("\n");
