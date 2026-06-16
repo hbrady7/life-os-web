@@ -156,3 +156,21 @@ activity icons in the mobile top bar).
 - Vitality settings (caffeine thresholds/presets, supplement reset hour,
   hydration ratios/modifiers) live under `userSettings.settings.vitality`
   (`lib/vitality.ts`).
+
+## Mind modules
+
+- **`/mind`** — hub linking the three sections below; all feed `getUserContext`.
+- **`/mind/ideas`** — a real idea board (`ideas` table): quick-add, status
+  (spark/exploring/parked/shipped) + tag filters, inline status cycling, edit,
+  delete. The mentor's "idea" quick-capture writes here; existing `kind='idea'`
+  memories are swept onto the board lazily on first load (also in `mind.sql`).
+- **`/mind/quotes`** — "smartest thing I heard" (`quotes` table): capture text +
+  who said it + context, search, edit, delete.
+- **`/mind/made`** — "how it's made", one ordinary thing explained, fresh daily
+  (`daily_learnings` table, UNIQUE(date)). `lib/daily-learning.ts`
+  `getTodaysLearning()` lazily generates + persists today's entry once via
+  Gemini (avoiding the last ~60 subjects), with a browsable archive and a
+  manual regenerate. An optional `0 5 * * *` cron
+  (`/api/cron/daily-learning`) pre-warms today + tomorrow.
+- New Mind tables apply via `npm run db:push` or the idempotent
+  `src/lib/db/migrations/mind.sql`.

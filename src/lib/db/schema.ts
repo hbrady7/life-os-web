@@ -1186,6 +1186,20 @@ export const quotes = pgTable(
   (t) => [index("quotes_user_idx").on(t.userId, t.createdAt)]
 );
 
+/**
+ * "How ordinary things are made" — one shared, app-wide learning per day.
+ * No user scope: the same daily fact is served to everyone. The UNIQUE
+ * date constraint is the concurrency guard — if two first-loads race to
+ * generate, the second insert conflicts and we re-read the winner's row.
+ */
+export const dailyLearnings = pgTable("daily_learnings", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  date: pgDate("date").notNull().unique(),
+  subject: text("subject").notNull(),
+  body: text("body").notNull(),
+  createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
+});
+
 // ─────────────────────────────────────────────────────────────────────────────
 // RELATIONS — drizzle uses these for the typed query builder.
 // ─────────────────────────────────────────────────────────────────────────────

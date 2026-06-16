@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { Lightbulb, Quote, ChevronRight } from "lucide-react";
+import { Lightbulb, Quote, Factory, ChevronRight } from "lucide-react";
 import { Screen } from "@/components/screen";
 
 const SECTIONS = [
@@ -19,6 +19,13 @@ const SECTIONS = [
     desc: "The smartest things you've heard.",
     Icon: Quote,
     color: "var(--mc-water)",
+  },
+  {
+    href: "/mind/made",
+    label: "How it's made",
+    desc: "One ordinary thing, explained — fresh every day.",
+    Icon: Factory,
+    color: "var(--mc-peak)",
   },
 ] as const;
 

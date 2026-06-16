@@ -26,6 +26,15 @@ CREATE TABLE IF NOT EXISTS "quotes" (
 );
 CREATE INDEX IF NOT EXISTS "quotes_user_idx" ON "quotes" ("user_id","created_at");
 
+-- "How it's made" — shared app-wide daily learning (no user scope).
+CREATE TABLE IF NOT EXISTS "daily_learnings" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"date" date NOT NULL UNIQUE,
+	"subject" text NOT NULL,
+	"body" text NOT NULL,
+	"created_at" timestamp DEFAULT now() NOT NULL
+);
+
 -- Phase 1 → Phase 6 data migration: move mentor "idea" memories onto the
 -- board, then stop storing ideas in memories. The app also does this
 -- lazily on first ideas load, so running this is optional.

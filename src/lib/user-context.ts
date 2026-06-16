@@ -24,6 +24,7 @@ import { listCaffeineForDate } from "@/lib/data/caffeine";
 import { getSupplementSummary } from "@/lib/data/supplements";
 import { listIdeas } from "@/lib/data/ideas";
 import { listQuotes } from "@/lib/data/quotes";
+import { getLearningByDate } from "@/lib/data/daily-learnings";
 import { gatherPeakStateInputs } from "@/lib/peak-state/gather";
 import { computePeakState } from "@/lib/peak-state/compute";
 import { DEFAULT_MACRO_TARGETS, type MacroTargets } from "@/lib/types";
@@ -64,6 +65,7 @@ export type UserContext = {
   memories: Array<{ content: string; kind: string }>;
   ideas: Array<{ title: string; status: string }>;
   quotes: Array<{ text: string; saidBy: string | null }>;
+  learningToday: string | null;
 };
 
 export async function getUserContext(
@@ -94,14 +96,22 @@ export async function getUserContext(
     readSleepRange(userId, date, date),
   ]);
 
-  const [memoryRows, caffeineToday, supplementSummary, ideaRows, quoteRows] =
-    await Promise.all([
-      listMemories(userId, 12),
-      listCaffeineForDate(userId, date),
-      getSupplementSummary(userId, date),
-      listIdeas(userId, 8),
-      listQuotes(userId, 5),
-    ]);
+  const [
+    memoryRows,
+    caffeineToday,
+    supplementSummary,
+    ideaRows,
+    quoteRows,
+    learningRow,
+  ] = await Promise.all([
+    listMemories(userId, 12),
+    listCaffeineForDate(userId, date),
+    getSupplementSummary(userId, date),
+    listIdeas(userId, 8),
+    listQuotes(userId, 5),
+    // Read-only — never generates here; the /mind/made page owns generation.
+    getLearningByDate(date),
+  ]);
   const memories = memoryRows.map((m) => ({ content: m.content, kind: m.kind }));
   const caffeineMgToday = caffeineToday.reduce((a, c) => a + (c.mg ?? 0), 0);
 
@@ -190,6 +200,7 @@ export async function getUserContext(
     memories,
     ideas: ideaRows.map((i) => ({ title: i.title, status: i.status })),
     quotes: quoteRows.map((q) => ({ text: q.text, saidBy: q.saidBy })),
+    learningToday: learningRow?.subject ?? null,
   };
 }
 
@@ -268,6 +279,8 @@ export function renderUserContext(ctx: UserContext): string {
     "",
     "Quotes the user saved (smartest things they heard):",
     quotes,
+    "",
+    `Today's "how it's made" learning: ${ctx.learningToday ?? "(not generated yet)"}`,
   ]
     .filter((l) => l !== "")
     .join("\n");
