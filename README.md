@@ -121,3 +121,38 @@ settings · days · goals · habits · workouts · health · journal · plans ·
 - The morning briefing and evening summary auto-fetch only after 5am / 8pm local. They cache by date in `settings.morningBriefing` / `settings.eveningSummary` so they don't re-call on every reload.
 - The service worker only runs in `NODE_ENV=production`. In dev you get plain Next behavior.
 - The dragging UX on goals/habits uses `@dnd-kit` pointer sensor — touch reorder requires touching the explicit grip handle to avoid fighting input focus.
+
+## Vitality modules
+
+A "best of Vitality" layer built on the v2 Neon/Drizzle/Auth.js/SWR stack.
+Reachable from the nav (Mentor + Vitality on desktop top-nav; the sparkle +
+activity icons in the mobile top bar).
+
+- **Shared infra**
+  - `lib/user-context.ts` — `getUserContext(userId)`: one server-side snapshot
+    (recovery, sleep, HRV, workouts, nutrition, hydration, caffeine,
+    supplements, weight, goals, memories) + `renderUserContext()` for prompt
+    injection. Reused by the Mentor and the energy curve.
+  - `components/ui/progress-ring.tsx` — `<ProgressRing>`, the WHOOP-style
+    glowing teal ring (reuses the `--mc-peak` token). Used for the energy
+    "now" score, supplement taken/total, and hydration bottles.
+- **`/mentor`** — streaming AI chat (`api/mentor`) that already knows your data,
+  plus "the void": a `memories` table + quick capture injected into context.
+- **`/vitality`** — hub page:
+  - **Energy forecast** — `lib/energy-curve.ts` `predictEnergyCurve()`: a
+    circadian template modulated by recovery/sleep, with decaying caffeine
+    bumps. Area chart + ProgressRing "now" marker.
+  - **Mood check-ins** (`energy_checkins`) for predicted-vs-actual.
+  - **Hydration** — `lib/hydration.ts` `computeHydrationTarget()` with an
+    itemized "show your math" breakdown; reuses the existing `water_logs`.
+  - **Caffeine tracker** (`caffeine_logs`) — zone bar + thresholds, feeds the
+    energy curve.
+  - **Supplement stack** (`supplements` / `supplement_logs`) + AI
+    "recommended for you" suggestions.
+  - **NL day planner** (`plan_blocks`) — Gemini parses plain text into time
+    blocks and flags hard work landing in a predicted energy dip.
+- **DB**: new tables are in `schema.ts`; apply with `npm run db:push` (or the
+  idempotent `src/lib/db/migrations/vitality.sql` via the Neon SQL console).
+- Vitality settings (caffeine thresholds/presets, supplement reset hour,
+  hydration ratios/modifiers) live under `userSettings.settings.vitality`
+  (`lib/vitality.ts`).
