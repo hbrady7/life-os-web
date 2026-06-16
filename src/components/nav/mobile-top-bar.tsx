@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { BookOpen, Scale, Settings } from "lucide-react";
+import { BookOpen, Scale, Settings, Sparkles } from "lucide-react";
 
 /**
  * Mobile-only top bar — safe-area inset + a small icon row.
@@ -18,6 +18,9 @@ export function MobileTopBar() {
       style={{ paddingTop: "env(safe-area-inset-top)" }}
     >
       <div className="flex justify-end items-center gap-2 px-3 py-2">
+        <TopIcon href="/mentor" label="Mentor">
+          <Sparkles size={17} />
+        </TopIcon>
         <TopIcon href="/journal" label="Journal">
           <BookOpen size={17} />
         </TopIcon>
