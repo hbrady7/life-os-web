@@ -1003,6 +1003,146 @@ export const workoutRoutines = pgTable(
 );
 
 // ─────────────────────────────────────────────────────────────────────────────
+// VITALITY — Mentor memory, caffeine, supplements, energy check-ins, planner.
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Mentor "the void" — durable thoughts the user captures (ideas, reminders,
+ * goals, notes). Injected into the Mentor's context recency-first.
+ */
+export const memories = pgTable(
+  "memories",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    content: text("content").notNull(),
+    kind: text("kind", { enum: ["idea", "reminder", "goal", "note"] })
+      .default("note")
+      .notNull(),
+    tags: text("tags").array().default(sql`ARRAY[]::text[]`).notNull(),
+    createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
+  },
+  (t) => [index("memories_user_idx").on(t.userId)]
+);
+
+/** Optional Mentor chat history so the thread survives reloads. */
+export const mentorMessages = pgTable(
+  "mentor_messages",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    role: text("role", { enum: ["user", "assistant"] }).notNull(),
+    content: text("content").notNull(),
+    createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
+  },
+  (t) => [index("mentor_messages_user_idx").on(t.userId)]
+);
+
+/**
+ * Per-drink caffeine log. Distinct from behaviors.caffeineMg (a daily
+ * aggregate) — this is the timestamped source of truth for the tracker
+ * and the energy curve's decaying caffeine bumps.
+ */
+export const caffeineLogs = pgTable(
+  "caffeine_logs",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    mg: real("mg").notNull(),
+    label: text("label"),
+    loggedAt: timestamp("logged_at", { mode: "date" }).defaultNow().notNull(),
+  },
+  (t) => [index("caffeine_logs_user_idx").on(t.userId, t.loggedAt)]
+);
+
+/** Supplement stack — what the user takes and when. */
+export const supplements = pgTable(
+  "supplements",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    dose: text("dose"),
+    window: text("window", { enum: ["morning", "anytime", "evening"] })
+      .default("anytime")
+      .notNull(),
+    note: text("note"),
+    order: integer("order").default(0).notNull(),
+    createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
+  },
+  (t) => [index("supplements_user_idx").on(t.userId)]
+);
+
+/** Daily taken/not-taken state for a supplement. Resets are a UI concern
+ * (configurable reset hour); the table just records the date taken. */
+export const supplementLogs = pgTable(
+  "supplement_logs",
+  {
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    supplementId: uuid("supplement_id")
+      .notNull()
+      .references(() => supplements.id, { onDelete: "cascade" }),
+    date: pgDate("date").notNull(),
+    takenAt: timestamp("taken_at", { mode: "date" }).defaultNow().notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.supplementId, t.date] })]
+);
+
+/**
+ * Felt-energy check-ins for predicted-vs-actual comparison. Separate from
+ * the daily mood_logs (1–10) and energy_logs (per-period 1–10) — this is a
+ * timestamped categorical felt-state.
+ */
+export const energyCheckins = pgTable(
+  "energy_checkins",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    date: pgDate("date").notNull(),
+    state: text("state", {
+      enum: ["foggy", "tired", "steady", "sharp", "peak"],
+    }).notNull(),
+    /** 0..100 numeric equivalent of the state for charting against the curve. */
+    score: integer("score").notNull(),
+    loggedAt: timestamp("logged_at", { mode: "date" }).defaultNow().notNull(),
+  },
+  (t) => [index("energy_checkins_user_date_idx").on(t.userId, t.date)]
+);
+
+/** Day-planner blocks parsed from natural language. */
+export const planBlocks = pgTable(
+  "plan_blocks",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    date: pgDate("date").notNull(),
+    task: text("task").notNull(),
+    /** Minutes since midnight, matching schedule_blocks. */
+    startMin: integer("start_min").notNull(),
+    endMin: integer("end_min").notNull(),
+    difficulty: text("difficulty", { enum: ["easy", "medium", "hard"] })
+      .default("medium")
+      .notNull(),
+    createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
+  },
+  (t) => [index("plan_blocks_user_date_idx").on(t.userId, t.date)]
+);
+
+// ─────────────────────────────────────────────────────────────────────────────
 // RELATIONS — drizzle uses these for the typed query builder.
 // ─────────────────────────────────────────────────────────────────────────────
 
