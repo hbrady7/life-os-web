@@ -16,6 +16,7 @@ import { WeeklyReviewCard } from "@/components/today/weekly-review-card";
 import { PatternCard } from "@/components/today/pattern-card";
 import { InsightsCard } from "@/components/today/insights-card";
 import { DayHero } from "@/components/today/day-hero";
+import { MorningGlance } from "@/components/today/morning-glance";
 import { FuelCard } from "@/components/today/fuel-card";
 import { PerformanceLane } from "@/components/today/performance-lane";
 import { RecoveryLane } from "@/components/today/recovery-lane";
@@ -93,6 +94,7 @@ function DaySurface() {
           <PhotoDayBanner placement="today" />
           <AttentionTicker />
           <DayHero />
+          <MorningGlance />
           <PerformanceLane />
           <RecoveryLane />
           <FuelCard />
