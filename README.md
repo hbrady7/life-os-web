@@ -141,7 +141,8 @@ activity icons in the mobile top bar).
 - **`/vitality`** — hub page:
   - **Energy forecast** — `lib/energy-curve.ts` `predictEnergyCurve()`: a
     circadian template modulated by recovery/sleep, with decaying caffeine
-    bumps. Area chart + ProgressRing "now" marker.
+    bumps. Area chart + ProgressRing "now" marker. **Now learns your real
+    peak hours** — see "Intelligence layer" below.
   - **Mood check-ins** (`energy_checkins`) for predicted-vs-actual.
   - **Hydration** — `lib/hydration.ts` `computeHydrationTarget()` with an
     itemized "show your math" breakdown; reuses the existing `water_logs`.
@@ -174,3 +175,68 @@ activity icons in the mobile top bar).
   (`/api/cron/daily-learning`) pre-warms today + tomorrow.
 - New Mind tables apply via `npm run db:push` or the idempotent
   `src/lib/db/migrations/mind.sql`.
+
+## Intelligence layer
+
+The cross-domain smarts that turn logged data into honest, personal coaching.
+**All additive — no schema migrations; reuses existing tables.**
+
+### The Insight Engine (`lib/insight-engine.ts`)
+
+A real **statistics** engine (not an LLM) that mines your own history for
+cross-domain links and surfaces only what clears both a sample-size and an
+effect-size bar — so a thin, noisy edge stays quiet instead of masquerading as
+a finding. Every card shows the real numbers: effect size, `n` per arm, an
+honest confidence label, and a two-sided Welch's t-test p-value.
+
+- **Method** — for each curated hypothesis it splits the predictor into a high
+  arm and a low arm (top vs bottom tercile for numbers; true/false for
+  booleans) and compares the outcome means with **Welch's t-test** (Student-t
+  CDF via the regularized incomplete beta) and **Cohen's d**. Nothing surfaces
+  below `MIN_ARM` samples per arm, `|d| ≥ 0.3`, and `p ≤ 0.2`.
+- **~20 hypotheses across every domain** — sleep→readiness/mood, sleep
+  quality→felt energy, late caffeine (past your cutoff hour)→that night's sleep
+  score, total/late caffeine→sleep, hydration→energy/mood, supplement
+  adherence→energy/readiness, training→sleep/recovery, steps→mood/sleep,
+  alcohol/stress/pre-bed screens/late meals→sleep, protein→next-day readiness.
+- **Data** — `lib/data/insight-series.ts` aligns every domain into per-date
+  tracks over a 90-day window. Caffeine timing is resolved to your **local**
+  clock via a tz offset the client passes (the server runs UTC). Sparse
+  predictors (caffeine, supplements, protein, water) only count on days you
+  actually logged them, keeping the low arm honest.
+- **Where it shows** — `GET /api/insights/engine` computes, filters anything
+  you've dismissed (shared `dismissed_patterns` fingerprint list), and persists
+  the snapshot into the previously-unused `insights` table. The dashboard
+  **Insight-engine card** (`components/today/insights-card.tsx`) renders the top
+  findings with confidence badges + `n`; the **Mentor** reads the same
+  correlations server-side (`user-context.ts`) and is told to cite them rather
+  than invent numbers.
+
+### Energy curve that learns your peak hours
+
+The forecast used to be a fixed template that only moved amplitude. Now
+`learnHourlyProfile()` buckets your felt-energy check-ins by the local hour they
+were logged and `personalizeBase()` blends that profile into the template
+**shape-preservingly** (rescaled to the template's level so amplitude still
+comes from readiness, then mixed per hour by a confidence weight `n/(n+K)`) — so
+the peak *hour* shifts as data accrues. The Vitality **Energy forecast** card
+overlays your **actual** check-ins as dots against the predicted line (closing
+the predicted-vs-actual loop the `energy_checkins` schema always anticipated)
+and labels itself "learned from N check-ins" once personalized.
+
+### Your day at a glance (`components/today/morning-glance.tsx`)
+
+A forward-looking start-the-day strip promoted directly under the readiness
+hero, showing what the hero doesn't: your **sharpest window** (from the learned
+curve), **hydration pace** (ahead/behind a linear target for the time of day,
+with the oz gap), and **supplements due** in the current window. Each tile
+self-hides when its data isn't there yet.
+
+### Export your data (`GET /api/data/export`, Settings → "Export your data")
+
+Own your data: a server-side export of every user-scoped table from Neon (not
+just the local snapshot the "Backup" card serializes). `?format=json` is the
+full archive (~50 content tables); `?format=csv` is a spreadsheet-friendly
+daily rollup (one row per date: sleep, readiness, strain, mood, steps, weight,
+water, HRV, resting HR, calories, protein). OAuth tokens are **redacted** and
+auth/credential tables excluded; on-device photo/audio blobs stay on-device.
