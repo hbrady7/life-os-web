@@ -16,6 +16,7 @@ import { AccountCard } from "@/components/settings/account-card";
 import { PeakStateCard } from "@/components/settings/peak-state-card";
 import { RemindersCard } from "@/components/settings/reminders-card";
 import { MemoryCard } from "@/components/settings/memory-card";
+import { DataExportCard } from "@/components/settings/data-export-card";
 import { DangerZoneCard } from "@/components/settings/danger-zone-card";
 import { useStore } from "@/store";
 import { AccentColor } from "@/lib/types";
@@ -308,6 +309,8 @@ export default function SettingsPage() {
           All data lives in your browser. Export before clearing site data.
         </p>
       </Card>
+
+      <DataExportCard />
 
       <Card>
         <CardHeader>
