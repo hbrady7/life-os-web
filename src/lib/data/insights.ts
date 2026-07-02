@@ -1,4 +1,4 @@
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, isNull } from "drizzle-orm";
 import { db } from "@/lib/db";
 import {
   dismissedPatterns,
@@ -34,6 +34,49 @@ export async function dismissInsight(userId: string, id: string) {
     .update(insights)
     .set({ dismissedAt: new Date() })
     .where(and(eq(insights.id, id), eq(insights.userId, userId)));
+}
+
+/** All non-dismissed insight rows of a given `type`, newest first. */
+export async function listInsightsByType(
+  userId: string,
+  type: string,
+  limit = 12
+) {
+  return db
+    .select()
+    .from(insights)
+    .where(
+      and(
+        eq(insights.userId, userId),
+        eq(insights.type, type),
+        isNull(insights.dismissedAt)
+      )
+    )
+    .orderBy(desc(insights.date))
+    .limit(limit);
+}
+
+/**
+ * Idempotently replace the current snapshot of a computed insight `type`
+ * (e.g. the Insight Engine's "correlation" rows). Old rows of that type are
+ * cleared and the fresh set is written under today's date — so the table
+ * always holds exactly the latest computation for the Mentor to read.
+ * Additive to the schema; only ever touches rows of this `type`.
+ */
+export async function replaceInsightsOfType(
+  userId: string,
+  type: string,
+  date: string,
+  rows: Array<{ content: unknown }>
+) {
+  await db
+    .delete(insights)
+    .where(and(eq(insights.userId, userId), eq(insights.type, type)));
+  if (rows.length === 0) return [];
+  return db
+    .insert(insights)
+    .values(rows.map((r) => ({ userId, date, type, content: r.content })))
+    .returning();
 }
 
 // ── Dismissed patterns (fingerprint blocklist) ─────────────────────────────

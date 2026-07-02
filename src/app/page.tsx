@@ -14,6 +14,7 @@ import { DailyStrainCard } from "@/components/today/daily-strain-card";
 import { ReflectionCard } from "@/components/today/reflection";
 import { WeeklyReviewCard } from "@/components/today/weekly-review-card";
 import { PatternCard } from "@/components/today/pattern-card";
+import { InsightsCard } from "@/components/today/insights-card";
 import { DayHero } from "@/components/today/day-hero";
 import { FuelCard } from "@/components/today/fuel-card";
 import { PerformanceLane } from "@/components/today/performance-lane";
@@ -98,6 +99,7 @@ function DaySurface() {
           <MovementLane />
           <DailyStrainCard />
           <MorningBriefing />
+          <InsightsCard />
           <WeeklyReviewCard />
           <PatternCard />
           <PresentOrPastBody />

@@ -1,4 +1,4 @@
-import { and, asc, eq } from "drizzle-orm";
+import { and, asc, eq, gte } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { energyCheckins } from "@/lib/db/schema";
 import { ENERGY_STATE_SCORE, type EnergyState } from "@/lib/energy-curve";
@@ -14,6 +14,24 @@ export async function listEnergyCheckinsForDate(
     .from(energyCheckins)
     .where(
       and(eq(energyCheckins.userId, userId), eq(energyCheckins.date, date))
+    )
+    .orderBy(asc(energyCheckins.loggedAt));
+}
+
+/**
+ * All check-ins on or after `since` (inclusive), oldest first. Powers both the
+ * insight engine (felt-energy as an outcome) and the learned hourly energy
+ * profile that lets the predictor's peak *hour* shift over time.
+ */
+export async function listEnergyCheckinsSince(
+  userId: string,
+  since: string
+): Promise<EnergyCheckinRow[]> {
+  return db
+    .select()
+    .from(energyCheckins)
+    .where(
+      and(eq(energyCheckins.userId, userId), gte(energyCheckins.date, since))
     )
     .orderBy(asc(energyCheckins.loggedAt));
 }

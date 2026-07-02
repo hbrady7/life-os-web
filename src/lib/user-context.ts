@@ -25,6 +25,8 @@ import { getSupplementSummary } from "@/lib/data/supplements";
 import { listIdeas } from "@/lib/data/ideas";
 import { listQuotes } from "@/lib/data/quotes";
 import { getLearningByDate } from "@/lib/data/daily-learnings";
+import { listInsightsByType } from "@/lib/data/insights";
+import type { EngineInsight } from "@/lib/insight-engine";
 import { gatherPeakStateInputs } from "@/lib/peak-state/gather";
 import { computePeakState } from "@/lib/peak-state/compute";
 import { DEFAULT_MACRO_TARGETS, type MacroTargets } from "@/lib/types";
@@ -66,6 +68,8 @@ export type UserContext = {
   ideas: Array<{ title: string; status: string }>;
   quotes: Array<{ text: string; saidBy: string | null }>;
   learningToday: string | null;
+  /** Strongest data-mined cross-domain correlations (Insight Engine). */
+  correlations: Array<{ detail: string; confidence: string; n: number }>;
 };
 
 export async function getUserContext(
@@ -103,6 +107,7 @@ export async function getUserContext(
     ideaRows,
     quoteRows,
     learningRow,
+    correlationRows,
   ] = await Promise.all([
     listMemories(userId, 12),
     listCaffeineForDate(userId, date),
@@ -111,7 +116,14 @@ export async function getUserContext(
     listQuotes(userId, 5),
     // Read-only — never generates here; the /mind/made page owns generation.
     getLearningByDate(date),
+    // Latest snapshot from the Insight Engine (computed lazily by the client
+    // dashboard); read-only here so the coach can cite real correlations.
+    listInsightsByType(userId, "correlation", 5),
   ]);
+  const correlations = correlationRows
+    .map((r) => r.content as EngineInsight)
+    .filter((c) => c && c.detail)
+    .map((c) => ({ detail: c.detail, confidence: c.confidence, n: c.n }));
   const memories = memoryRows.map((m) => ({ content: m.content, kind: m.kind }));
   const caffeineMgToday = caffeineToday.reduce((a, c) => a + (c.mg ?? 0), 0);
 
@@ -201,6 +213,7 @@ export async function getUserContext(
     ideas: ideaRows.map((i) => ({ title: i.title, status: i.status })),
     quotes: quoteRows.map((q) => ({ text: q.text, saidBy: q.saidBy })),
     learningToday: learningRow?.subject ?? null,
+    correlations,
   };
 }
 
@@ -281,6 +294,13 @@ export function renderUserContext(ctx: UserContext): string {
     quotes,
     "",
     `Today's "how it's made" learning: ${ctx.learningToday ?? "(not generated yet)"}`,
+    "",
+    "Data-mined patterns (Insight Engine — real correlations from their own logs, with sample sizes; cite these, don't invent new numbers):",
+    ctx.correlations.length
+      ? ctx.correlations
+          .map((c) => `  - ${c.detail} [${c.confidence} signal]`)
+          .join("\n")
+      : "  (not enough overlapping data yet)",
   ]
     .filter((l) => l !== "")
     .join("\n");
