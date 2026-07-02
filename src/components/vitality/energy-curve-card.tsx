@@ -3,10 +3,11 @@
 import * as React from "react";
 import {
   Area,
-  AreaChart,
   CartesianGrid,
+  ComposedChart,
   ReferenceLine,
   ResponsiveContainer,
+  Scatter,
   Tooltip,
   XAxis,
   YAxis,
@@ -69,7 +70,9 @@ export function EnergyCurveCard({ date }: { date: string }) {
         <CardTitle>Energy forecast</CardTitle>
         {curve && (
           <span className="text-xs text-[var(--color-fg-3)]">
-            {curve.inputs.sleepScore != null || curve.inputs.recovery != null
+            {curve.personalized
+              ? "learned from your rhythm"
+              : curve.inputs.sleepScore != null || curve.inputs.recovery != null
               ? "tuned to your recovery"
               : "baseline rhythm"}
           </span>
@@ -99,12 +102,17 @@ export function EnergyCurveCard({ date }: { date: string }) {
               <p className="mt-1 text-xs">
                 Your predicted sharpest window today. Plan hard work there.
               </p>
+              <p className="mt-1 text-[11px] text-[var(--color-fg-3)]">
+                {curve.personalized
+                  ? `Shape learned from ${curve.learnedCheckins} of your check-ins.`
+                  : "Log energy check-ins and this rhythm becomes yours."}
+              </p>
             </div>
           </div>
 
           <div className="h-[180px]">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart
+              <ComposedChart
                 data={curve.points}
                 margin={{ top: 6, right: 8, left: -18, bottom: 0 }}
               >
@@ -138,9 +146,29 @@ export function EnergyCurveCard({ date }: { date: string }) {
                   fill="url(#energy-fill)"
                   style={{ filter: `drop-shadow(0 2px 6px color-mix(in srgb, ${TEAL} 35%, transparent))` }}
                 />
-              </AreaChart>
+                {curve.actual.length > 0 && (
+                  <Scatter
+                    data={curve.actual}
+                    dataKey="score"
+                    fill={TEAL}
+                    stroke="var(--color-base)"
+                    strokeWidth={1.5}
+                    isAnimationActive={false}
+                  />
+                )}
+              </ComposedChart>
             </ResponsiveContainer>
           </div>
+          {curve.actual.length > 0 && (
+            <div className="flex items-center gap-1.5 text-[10px] text-[var(--color-fg-3)]">
+              <span
+                className="inline-block h-2 w-2 rounded-full"
+                style={{ background: TEAL, boxShadow: "0 0 0 1.5px var(--color-base)" }}
+              />
+              Dots are how you actually felt — the closer to the line, the better
+              the forecast.
+            </div>
+          )}
         </div>
       )}
     </Card>
