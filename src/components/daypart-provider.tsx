@@ -2,7 +2,22 @@
 
 import * as React from "react";
 import { useStore } from "@/store";
-import { currentDaypart, resolveAccent } from "@/lib/daypart";
+import { currentDaypart, resolveAccent, type Daypart } from "@/lib/daypart";
+
+/**
+ * Live daypart for layout decisions (deck ordering, greetings).
+ * Returns null before mount so SSR and first client render agree.
+ */
+export function useDaypart(): Daypart | null {
+  const [daypart, setDaypart] = React.useState<Daypart | null>(null);
+  React.useEffect(() => {
+    const tick = () => setDaypart(currentDaypart());
+    tick();
+    const interval = window.setInterval(tick, 60_000);
+    return () => window.clearInterval(interval);
+  }, []);
+  return daypart;
+}
 
 /**
  * Applies the circadian chrome: sets html[data-daypart] (drives the

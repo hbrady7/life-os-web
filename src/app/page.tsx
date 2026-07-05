@@ -3,7 +3,7 @@
 import * as React from "react";
 import { motion, PanInfo } from "motion/react";
 import { Screen } from "@/components/screen";
-import { TodayHeader } from "@/components/today/header";
+import { DeckHeader } from "@/components/today/deck-header";
 import { AttentionTicker } from "@/components/today/attention-ticker";
 import { MorningBriefing } from "@/components/today/morning-briefing";
 import { MorningRoutine } from "@/components/today/morning-routine";
@@ -22,6 +22,8 @@ import { PerformanceLane } from "@/components/today/performance-lane";
 import { RecoveryLane } from "@/components/today/recovery-lane";
 import { MovementLane } from "@/components/today/movement-lane";
 import { DayProvider, useDay } from "@/components/today/day-context";
+import { useDaypart } from "@/components/daypart-provider";
+import type { Daypart } from "@/lib/daypart";
 import { useStore } from "@/store";
 import { haptic } from "@/lib/haptics";
 import { maybeAutoSync } from "@/lib/integrations/google-health/sync-client";
@@ -42,9 +44,105 @@ export default function Page() {
   );
 }
 
+/**
+ * The command deck. One canonical set of cards, arranged into two
+ * columns on desktop — OPERATE (left: things you do) and MONITOR
+ * (right: things you read) — and one daypart-ordered stack on mobile.
+ * Ordering is a keyed-array sort, so React keeps each card's identity
+ * when the day moves between dawn/day/dusk/night.
+ */
+
+type CardKey =
+  | "hero"
+  | "glance"
+  | "goals"
+  | "todayRoutine"
+  | "morningRoutine"
+  | "eveningRoutine"
+  | "reflection"
+  | "briefing"
+  | "performance"
+  | "recovery"
+  | "fuel"
+  | "movement"
+  | "strain"
+  | "insights"
+  | "weekly"
+  | "pattern";
+
+/** Anchor ids the AttentionTicker scrolls to — must survive reordering. */
+const ANCHOR_FOR: Partial<Record<CardKey, string>> = {
+  morningRoutine: "anchor-morning",
+  goals: "anchor-goals",
+  eveningRoutine: "anchor-evening",
+};
+
+const CARD: Record<CardKey, React.ComponentType> = {
+  hero: DayHero,
+  glance: MorningGlance,
+  goals: Goals,
+  todayRoutine: TodayRoutineCard,
+  morningRoutine: MorningRoutine,
+  eveningRoutine: EveningRoutine,
+  reflection: ReflectionCard,
+  briefing: MorningBriefing,
+  performance: PerformanceLane,
+  recovery: RecoveryLane,
+  fuel: FuelCard,
+  movement: MovementLane,
+  strain: DailyStrainCard,
+  insights: InsightsCard,
+  weekly: WeeklyReviewCard,
+  pattern: PatternCard,
+};
+
+/**
+ * OPERATE zone order per daypart. The hero always anchors; the ritual
+ * for the current daypart climbs to the top slot beneath it.
+ */
+const OPERATE_ORDER: Record<Daypart, CardKey[]> = {
+  dawn: ["hero", "glance", "morningRoutine", "goals", "todayRoutine", "eveningRoutine", "reflection"],
+  day: ["hero", "glance", "goals", "todayRoutine", "morningRoutine", "eveningRoutine", "reflection"],
+  dusk: ["hero", "eveningRoutine", "reflection", "goals", "todayRoutine", "glance", "morningRoutine"],
+  night: ["hero", "eveningRoutine", "reflection", "goals", "todayRoutine", "glance", "morningRoutine"],
+};
+
+/** MONITOR zone: morning reads recovery first, evening reads strain first. */
+const MONITOR_ORDER: Record<Daypart, CardKey[]> = {
+  dawn: ["briefing", "recovery", "performance", "fuel", "movement", "strain", "insights", "weekly", "pattern"],
+  day: ["performance", "fuel", "movement", "strain", "recovery", "briefing", "insights", "weekly", "pattern"],
+  dusk: ["strain", "fuel", "performance", "movement", "recovery", "insights", "weekly", "pattern", "briefing"],
+  night: ["strain", "fuel", "performance", "movement", "recovery", "insights", "weekly", "pattern", "briefing"],
+};
+
+function CardStack({ order }: { order: CardKey[] }) {
+  return (
+    <>
+      {order.map((key) => {
+        const Component = CARD[key];
+        const anchor = ANCHOR_FOR[key];
+        return anchor ? (
+          <div key={key} id={anchor} style={{ scrollMarginTop: "5rem" }}>
+            <Component />
+          </div>
+        ) : (
+          <div key={key}>
+            <Component />
+          </div>
+        );
+      })}
+    </>
+  );
+}
+
 function DaySurface() {
-  const { step, canGoBack, canGoForward } = useDay();
+  const { step, canGoBack, canGoForward, isToday } = useDay();
   const swipeEnabled = useStore((s) => s.settings.dayNavigation.swipeEnabled);
+  const daypart = useDaypart();
+
+  // Past days read in canonical (day) order — time-of-day emphasis only
+  // applies to the live day.
+  const effective: Daypart = isToday && daypart ? daypart : "day";
 
   const onPanEnd = (
     _e: PointerEvent | MouseEvent | TouchEvent,
@@ -89,43 +187,20 @@ function DaySurface() {
         // Allow vertical scroll; only intercept horizontal pans
         style={{ touchAction: "pan-y" }}
       >
-        <Screen>
-          <TodayHeader />
+        <Screen width="wide">
+          <DeckHeader />
           <PhotoDayBanner placement="today" />
           <AttentionTicker />
-          <DayHero />
-          <MorningGlance />
-          <PerformanceLane />
-          <RecoveryLane />
-          <FuelCard />
-          <MovementLane />
-          <DailyStrainCard />
-          <MorningBriefing />
-          <InsightsCard />
-          <WeeklyReviewCard />
-          <PatternCard />
-          <PresentOrPastBody />
+          <div className="space-y-3 md:space-y-4 lg:space-y-0 lg:grid lg:grid-cols-12 lg:gap-4 lg:items-start">
+            <div className="space-y-3 md:space-y-4 lg:col-span-7">
+              <CardStack order={OPERATE_ORDER[effective]} />
+            </div>
+            <div className="space-y-3 md:space-y-4 lg:col-span-5">
+              <CardStack order={MONITOR_ORDER[effective]} />
+            </div>
+          </div>
         </Screen>
       </motion.div>
     </PullToRefresh>
   );
 }
-
-function PresentOrPastBody() {
-  return (
-    <>
-      <div id="anchor-morning" style={{ scrollMarginTop: "5rem" }}>
-        <MorningRoutine />
-      </div>
-      <div id="anchor-goals" style={{ scrollMarginTop: "5rem" }}>
-        <Goals />
-      </div>
-      <TodayRoutineCard />
-      <div id="anchor-evening" style={{ scrollMarginTop: "5rem" }}>
-        <EveningRoutine />
-      </div>
-      <ReflectionCard />
-    </>
-  );
-}
-
