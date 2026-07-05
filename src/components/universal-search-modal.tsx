@@ -13,11 +13,21 @@ import {
   ListChecks,
   ChefHat,
   Activity,
+  Droplets,
+  SmilePlus,
+  Zap,
+  Scale,
+  Footprints,
+  Apple,
+  BookOpen,
+  CornerDownLeft,
 } from "lucide-react";
 import useSWR from "swr";
-import { useStore } from "@/store";
+import { useStore, type QuickLogKind } from "@/store";
 import { Modal } from "@/components/ui/modal";
 import { Input } from "@/components/ui/input";
+import { addWater } from "@/lib/hooks/use-metrics";
+import { todayStr } from "@/lib/date";
 import { useHabits } from "@/lib/hooks/use-habits";
 import { useJournalEntries } from "@/lib/hooks/use-journal";
 import { useSavedMeals } from "@/lib/hooks/use-meals";
@@ -88,6 +98,35 @@ function escapeRe(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
+type CommandAction = {
+  id: string;
+  title: string;
+  subtitle?: string;
+  keywords: string;
+  Icon: typeof Search;
+  color?: string;
+  /** "log" opens a metric modal, "water" logs instantly, "nav" routes. */
+  kind: "log" | "water" | "nav";
+  logKind?: QuickLogKind;
+  href?: string;
+};
+
+/**
+ * The action layer that turns search into a command bar. Shown in full
+ * when the query is empty; fuzzy-filtered alongside search hits when
+ * typing.
+ */
+const COMMAND_ACTIONS: CommandAction[] = [
+  { id: "water8", title: "Log water · +8 oz", subtitle: "Adds instantly", keywords: "water drink hydrate oz glass", Icon: Droplets, color: "var(--mc-water)", kind: "water" },
+  { id: "mood", title: "Log mood", keywords: "mood feeling emotion", Icon: SmilePlus, color: "var(--mc-mood)", kind: "log", logKind: "mood" },
+  { id: "energy", title: "Log energy", keywords: "energy tired alert", Icon: Zap, color: "var(--mc-energy)", kind: "log", logKind: "energy" },
+  { id: "weight", title: "Log weight", keywords: "weight weigh scale lb kg", Icon: Scale, color: "var(--mc-weight)", kind: "log", logKind: "weight" },
+  { id: "steps", title: "Log steps", keywords: "steps walk count", Icon: Footprints, color: "var(--mc-steps)", kind: "log", logKind: "steps" },
+  { id: "meal", title: "Log a meal", subtitle: "Nutrition", keywords: "meal food eat calories macro photo", Icon: Apple, color: "var(--mc-calories)", kind: "nav", href: "/nutrition" },
+  { id: "workout", title: "Start a workout", subtitle: "Gym", keywords: "workout gym lift train session", Icon: Dumbbell, color: "var(--pillar-strain)", kind: "nav", href: "/gym" },
+  { id: "journal", title: "New journal entry", subtitle: "Journal", keywords: "journal write note reflect voice", Icon: BookOpen, color: "var(--mc-sleep)", kind: "nav", href: "/journal" },
+];
+
 function scoreMatch(text: string, q: string): number {
   if (!text) return 0;
   const t = text.toLowerCase();
@@ -100,8 +139,27 @@ function scoreMatch(text: string, q: string): number {
 
 export function UniversalSearchModal({ open, onClose }: Props) {
   const router = useRouter();
+  const openQuickLog = useStore((s) => s.openQuickLog);
   const [query, setQuery] = React.useState("");
   const [activeIndex, setActiveIndex] = React.useState(0);
+
+  const runAction = React.useCallback(
+    (a: CommandAction) => {
+      haptic("tap");
+      if (a.kind === "water") {
+        void addWater(todayStr(), 8);
+        haptic("success");
+        onClose();
+      } else if (a.kind === "log" && a.logKind) {
+        // openQuickLog also closes the search surface via store state.
+        openQuickLog(a.logKind);
+      } else if (a.kind === "nav" && a.href) {
+        router.push(a.href);
+        onClose();
+      }
+    },
+    [onClose, openQuickLog, router]
+  );
 
   // Cross-day goals: /api/data/goals with no `?date=...` returns all goals.
   const allGoals = useSWR<GoalRow[]>(open ? "/api/data/goals" : null);
@@ -282,8 +340,21 @@ export function UniversalSearchModal({ open, onClose }: Props) {
     }));
   }, [hits]);
 
-  // Flat list for keyboard nav (matches the rendered order).
-  const flatHits = React.useMemo(
+  // Actions: full list on empty query, keyword-filtered while typing.
+  const actionHits = React.useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return COMMAND_ACTIONS;
+    return COMMAND_ACTIONS.filter(
+      (a) =>
+        scoreMatch(a.title, q) > 0 ||
+        a.keywords.split(" ").some((k) => k.startsWith(q))
+    );
+  }, [query]);
+
+  // Flat list for keyboard nav — actions first, then search hits, in
+  // rendered order.
+  const totalCount = actionHits.length + hits.length;
+  const flatSearchHits = React.useMemo(
     () => groups.flatMap((g) => g.hits),
     [groups]
   );
@@ -293,16 +364,21 @@ export function UniversalSearchModal({ open, onClose }: Props) {
   }, [query]);
 
   const onKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
-    if (flatHits.length === 0) return;
+    if (totalCount === 0) return;
     if (e.key === "ArrowDown") {
       e.preventDefault();
-      setActiveIndex((i) => Math.min(i + 1, flatHits.length - 1));
+      setActiveIndex((i) => Math.min(i + 1, totalCount - 1));
     } else if (e.key === "ArrowUp") {
       e.preventDefault();
       setActiveIndex((i) => Math.max(i - 1, 0));
     } else if (e.key === "Enter") {
       e.preventDefault();
-      const hit = flatHits[activeIndex];
+      if (activeIndex < actionHits.length) {
+        const a = actionHits[activeIndex];
+        if (a) runAction(a);
+        return;
+      }
+      const hit = flatSearchHits[activeIndex - actionHits.length];
       if (hit) {
         haptic("tap");
         router.push(hit.href);
@@ -312,20 +388,20 @@ export function UniversalSearchModal({ open, onClose }: Props) {
   };
 
   return (
-    <Modal open={open} onClose={onClose} title="Search" size="lg">
+    <Modal open={open} onClose={onClose} title="Search & log" size="lg">
       <div className="space-y-3" onKeyDown={onKeyDown}>
         <Input
           autoFocus
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search goals, habits, journal, meals, exercises…"
+          placeholder="Log something, or search everything…"
           inputMode="search"
           autoCapitalize="off"
           autoCorrect="off"
           spellCheck={false}
         />
 
-        {query.trim().length >= 2 && flatHits.length === 0 && (
+        {query.trim().length >= 2 && totalCount === 0 && (
           <div className="text-center py-6">
             <Search
               size={20}
@@ -335,15 +411,61 @@ export function UniversalSearchModal({ open, onClose }: Props) {
           </div>
         )}
 
-        {query.trim().length < 2 && (
-          <div className="text-center py-6">
-            <div className="text-xs text-[var(--color-fg-3)]">
-              Type at least 2 characters.
-            </div>
-          </div>
-        )}
-
         <div className="max-h-[60vh] overflow-y-auto nice-scroll space-y-3 -mx-1 px-1">
+          {actionHits.length > 0 && (
+            <section className="space-y-1">
+              <div className="label px-2">Actions</div>
+              <ul className="space-y-0.5">
+                {actionHits.map((a, i) => {
+                  const isActive = i === activeIndex;
+                  return (
+                    <li key={a.id}>
+                      <button
+                        type="button"
+                        onMouseEnter={() => setActiveIndex(i)}
+                        onClick={() => runAction(a)}
+                        className={cn(
+                          "w-full flex items-center gap-3 px-3 py-2 rounded-[var(--radius-control)] text-left",
+                          "transition-colors duration-[120ms] active:scale-[0.99]",
+                          isActive
+                            ? "bg-[var(--color-elevated)]"
+                            : "hover:bg-[var(--color-card-hover)]"
+                        )}
+                      >
+                        <span
+                          className="h-7 w-7 grid place-items-center rounded-full shrink-0"
+                          style={{
+                            background: a.color
+                              ? `color-mix(in srgb, ${a.color} 14%, transparent)`
+                              : "var(--color-elevated)",
+                            color: a.color ?? "var(--color-fg-2)",
+                          }}
+                        >
+                          <a.Icon size={14} />
+                        </span>
+                        <div className="flex-1 min-w-0">
+                          <div className="text-[15px] font-medium truncate">
+                            {a.title}
+                          </div>
+                          {a.subtitle && (
+                            <div className="text-xs text-[var(--color-fg-3)] truncate">
+                              {a.subtitle}
+                            </div>
+                          )}
+                        </div>
+                        {isActive && (
+                          <CornerDownLeft
+                            size={13}
+                            className="text-[var(--color-fg-3)] shrink-0"
+                          />
+                        )}
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            </section>
+          )}
           {groups.map((group) => {
             let runningIndex = 0;
             // Compute the starting flat-index of this group so per-row index
@@ -358,7 +480,7 @@ export function UniversalSearchModal({ open, onClose }: Props) {
                 <ul className="space-y-0.5">
                   {group.hits.map((h, i) => {
                     const Icon = KIND_ICON[h.kind];
-                    const flatIdx = runningIndex + i;
+                    const flatIdx = actionHits.length + runningIndex + i;
                     const isActive = flatIdx === activeIndex;
                     return (
                       <li key={`${h.kind}-${h.id}`}>

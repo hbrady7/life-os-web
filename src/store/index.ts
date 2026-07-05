@@ -78,8 +78,17 @@ import {
 
 const STORE_VERSION = 2;
 
+/** Surfaces the global quick-log host can open. */
+export type QuickLogKind = "water" | "mood" | "energy" | "weight" | "steps";
+
 type State = {
   hydrated: boolean;
+  /** Transient UI state for the global quick-log host — never persisted. */
+  quickLog: {
+    sheetOpen: boolean;
+    active: QuickLogKind | null;
+    searchOpen: boolean;
+  };
   settings: Settings;
   days: Record<DateStr, Day>;
   goals: Goal[];
@@ -117,6 +126,11 @@ type State = {
 type Actions = {
   // hydration
   setHydrated: () => void;
+
+  // quick-log host
+  openQuickLog: (kind?: QuickLogKind) => void;
+  closeQuickLog: () => void;
+  setQuickLogSearch: (open: boolean) => void;
 
   // settings
   updateSettings: (patch: Partial<Settings>) => void;
@@ -400,6 +414,7 @@ function buildDefaultEvening(selected?: string[]): EveningRoutineItem[] {
 
 const initialState: State = {
   hydrated: false,
+  quickLog: { sheetOpen: false, active: null, searchOpen: false },
   settings: defaultSettings(),
   days: {},
   goals: [],
@@ -470,6 +485,21 @@ export const useStore = create<State & Actions>()(
       ...initialState,
 
       setHydrated: () => set({ hydrated: true }),
+
+      openQuickLog: (kind) =>
+        set({
+          quickLog: {
+            sheetOpen: !kind,
+            active: kind ?? null,
+            searchOpen: false,
+          },
+        }),
+      closeQuickLog: () =>
+        set({ quickLog: { sheetOpen: false, active: null, searchOpen: false } }),
+      setQuickLogSearch: (open) =>
+        set((s) => ({
+          quickLog: { ...s.quickLog, sheetOpen: false, searchOpen: open },
+        })),
 
       updateSettings: (patch) =>
         set((s) => ({ settings: { ...s.settings, ...patch } })),
@@ -1908,8 +1938,9 @@ export const useStore = create<State & Actions>()(
         return persisted as State;
       },
       partialize: (state) => {
-        const { hydrated: _hydrated, ...rest } = state;
+        const { hydrated: _hydrated, quickLog: _quickLog, ...rest } = state;
         void _hydrated;
+        void _quickLog;
         return rest;
       },
       merge: (persisted, current) => {

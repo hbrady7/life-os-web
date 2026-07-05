@@ -12,11 +12,15 @@ import {
   CheckSquare,
   Dumbbell,
   Home,
+  Plus,
   Scale,
+  Search,
   Settings,
   Sparkles,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useStore } from "@/store";
+import { haptic } from "@/lib/haptics";
 import { HorizonBand } from "@/components/horizon-band";
 import { DAYPART_LABEL, currentDaypart } from "@/lib/daypart";
 
@@ -65,6 +69,8 @@ const GROUPS: Group[] = [
 
 export function Sidebar() {
   const pathname = usePathname();
+  const openQuickLog = useStore((s) => s.openQuickLog);
+  const setQuickLogSearch = useStore((s) => s.setQuickLogSearch);
 
   return (
     <aside
@@ -82,6 +88,28 @@ export function Sidebar() {
         </Link>
         <div className="mt-4">
           <HorizonBand height={2} />
+        </div>
+        <div className="mt-4 flex items-center gap-1.5">
+          <button
+            type="button"
+            onClick={() => {
+              haptic("tap");
+              openQuickLog();
+            }}
+            className="flex-1 h-9 rounded-lg bg-[var(--color-accent-strong)] text-[var(--color-accent-contrast)] text-sm font-medium flex items-center justify-center gap-1.5 shadow-[var(--shadow-glow)] active:scale-[0.97] transition accent-ring"
+          >
+            <Plus size={15} strokeWidth={2.4} />
+            Log
+            <kbd className="font-mono text-[9px] opacity-60">⌘J</kbd>
+          </button>
+          <button
+            type="button"
+            aria-label="Search (⌘K)"
+            onClick={() => setQuickLogSearch(true)}
+            className="h-9 w-9 grid place-items-center rounded-lg border border-[var(--color-stroke)] text-[var(--color-fg-2)] hover:text-[var(--color-fg)] hover:border-[var(--color-stroke-strong)] transition accent-ring"
+          >
+            <Search size={15} />
+          </button>
         </div>
       </div>
 

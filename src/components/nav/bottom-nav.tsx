@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 import { BarChart3, Brain, HeartPulse, Home, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { haptic } from "@/lib/haptics";
-import { QuickLogSheet } from "./quick-log-sheet";
+import { useStore } from "@/store";
 
 /**
  * Four domain tabs around a raised center Log button — logging is the
@@ -46,7 +46,7 @@ function isActive(pathname: string, match: readonly string[]) {
 
 export function BottomNav() {
   const pathname = usePathname();
-  const [logOpen, setLogOpen] = React.useState(false);
+  const openQuickLog = useStore((s) => s.openQuickLog);
 
   return (
     <>
@@ -66,7 +66,7 @@ export function BottomNav() {
               aria-label="Log something"
               onClick={() => {
                 haptic("tap");
-                setLogOpen(true);
+                openQuickLog();
               }}
               className="absolute left-1/2 -translate-x-1/2 -top-4 h-14 w-14 grid place-items-center rounded-full bg-[var(--color-accent-strong)] text-[var(--color-accent-contrast)] shadow-[var(--shadow-glow)] active:scale-95 transition accent-ring"
             >
@@ -79,8 +79,6 @@ export function BottomNav() {
           ))}
         </ul>
       </nav>
-
-      <QuickLogSheet open={logOpen} onClose={() => setLogOpen(false)} />
     </>
   );
 }

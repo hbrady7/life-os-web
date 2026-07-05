@@ -6,6 +6,7 @@ import { Sidebar } from "@/components/nav/sidebar";
 import { BottomNav } from "@/components/nav/bottom-nav";
 import { MobileTopBar } from "@/components/nav/mobile-top-bar";
 import { HydrateGate } from "@/components/hydrate-gate";
+import { QuickLogHost } from "@/components/quick-log-host";
 import { Overseer } from "@/components/overseer/overseer";
 import { ImportModal } from "@/components/import-modal";
 import { OfflineBanner } from "@/components/offline-banner";
@@ -35,6 +36,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <MobileTopBar />
       <div className="md:pl-60">{children}</div>
       <BottomNav />
+      <QuickLogHost />
       <Overseer />
       <ImportModal />
       <ActiveWorkoutBanner />
