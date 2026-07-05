@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { usePathname } from "next/navigation";
-import { TopNav } from "@/components/nav/top-nav";
+import { Sidebar } from "@/components/nav/sidebar";
 import { BottomNav } from "@/components/nav/bottom-nav";
 import { MobileTopBar } from "@/components/nav/mobile-top-bar";
 import { HydrateGate } from "@/components/hydrate-gate";
@@ -14,8 +14,10 @@ import { CapacitorBootstrap } from "@/components/capacitor-bootstrap";
 
 /**
  * Conditional chrome wrapper. The sign-in route lives at /signin and
- * shows its own pared-down layout — we hide the nav surfaces, HydrateGate,
- * and Overseer there. Everywhere else gets the full app shell.
+ * shows its own pared-down layout — we hide the nav surfaces,
+ * HydrateGate, and Overseer there. Everywhere else gets the full frame:
+ * fixed sidebar on desktop (content offset by md:pl-60), horizon top
+ * bar + domain bottom nav on mobile.
  */
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -29,9 +31,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <HydrateGate>
       <OfflineBanner />
-      <TopNav />
+      <Sidebar />
       <MobileTopBar />
-      {children}
+      <div className="md:pl-60">{children}</div>
       <BottomNav />
       <Overseer />
       <ImportModal />

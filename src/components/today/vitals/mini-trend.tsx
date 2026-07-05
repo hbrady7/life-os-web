@@ -38,6 +38,8 @@ export function MiniTrend({
     });
   }, [values, width, height]);
 
+  const gradId = React.useId();
+
   if (!points) {
     return (
       <svg width={width} height={height} aria-label={ariaLabel}>
@@ -80,7 +82,6 @@ export function MiniTrend({
     }
   }
 
-  const gradId = React.useId();
   return (
     <svg width={width} height={height} aria-label={ariaLabel} className="overflow-visible">
       <defs>

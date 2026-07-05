@@ -11,8 +11,8 @@ export default function manifest(): MetadataRoute.Manifest {
     // standalone window after sign-in.
     scope: "/",
     display: "standalone",
-    background_color: "#050507",
-    theme_color: "#050507",
+    background_color: "#06070C",
+    theme_color: "#06070C",
     orientation: "portrait",
     icons: [
       {

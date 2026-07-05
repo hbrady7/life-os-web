@@ -174,7 +174,7 @@ export function TodayHeader() {
                 haptic("tap");
                 goToday();
               }}
-              className="inline-flex items-center h-7 px-3 rounded-full text-xs font-medium bg-[var(--color-accent-strong)] text-white"
+              className="inline-flex items-center h-7 px-3 rounded-full text-xs font-medium bg-[var(--color-accent-strong)] text-[var(--color-accent-contrast)]"
             >
               Today
             </button>
@@ -256,7 +256,7 @@ function DayTypePicker({
         <button
           type="submit"
           disabled={!draft.trim()}
-          className="h-9 px-3 rounded-lg bg-[var(--color-accent-strong)] text-white text-xs font-medium disabled:opacity-40"
+          className="h-9 px-3 rounded-lg bg-[var(--color-accent-strong)] text-[var(--color-accent-contrast)] text-xs font-medium disabled:opacity-40"
         >
           Add
         </button>

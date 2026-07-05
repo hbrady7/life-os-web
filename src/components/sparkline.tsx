@@ -39,6 +39,8 @@ export function Sparkline({
     return coords;
   }, [values, width, height]);
 
+  const gradId = React.useId();
+
   if (!points) {
     return (
       <svg width={width} height={height} aria-hidden>
@@ -80,8 +82,6 @@ export function Sparkline({
       break;
     }
   }
-
-  const gradId = React.useId();
 
   return (
     <svg

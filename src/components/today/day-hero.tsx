@@ -338,6 +338,7 @@ function PillarDetailSheet({
 }
 
 function Sparkline({ trend, tone }: { trend: (number | null)[]; tone: string }) {
+  const gid = React.useId();
   const values = trend.filter((n): n is number => n != null);
   if (values.length < 2) {
     return (
@@ -352,7 +353,6 @@ function Sparkline({ trend, tone }: { trend: (number | null)[]; tone: string }) 
   const min = Math.min(...values);
   const max = Math.max(...values);
   const span = max - min || 1;
-  const gid = React.useId();
 
   const points = trend.map((v, i) => ({
     x: trend.length === 1 ? W / 2 : (i / (trend.length - 1)) * W,

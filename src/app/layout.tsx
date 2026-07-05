@@ -1,14 +1,35 @@
 import type { Metadata, Viewport } from "next";
-import { AccentProvider } from "@/components/accent-provider";
+import { Archivo, IBM_Plex_Mono, Inter } from "next/font/google";
+import { DaypartProvider } from "@/components/daypart-provider";
 import { AppShell } from "@/components/app-shell";
 import { PwaMode } from "@/components/pwa-mode";
 import { ServiceWorkerRegister } from "@/components/sw-register";
 import { SwrProvider } from "@/components/swr-provider";
 import "./globals.css";
 
+const inter = Inter({
+  subsets: ["latin"],
+  variable: "--font-inter",
+  display: "swap",
+});
+
+const archivo = Archivo({
+  subsets: ["latin"],
+  variable: "--font-archivo",
+  axes: ["wdth"],
+  display: "swap",
+});
+
+const plexMono = IBM_Plex_Mono({
+  subsets: ["latin"],
+  weight: ["400", "500", "600"],
+  variable: "--font-plex-mono",
+  display: "swap",
+});
+
 export const metadata: Metadata = {
   title: "Life OS",
-  description: "Your day at a glance.",
+  description: "Your day, on one deck.",
   applicationName: "Life OS",
   appleWebApp: {
     capable: true,
@@ -19,7 +40,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#050507",
+  themeColor: "#06070C",
   width: "device-width",
   initialScale: 1,
   // maximumScale + userScalable disabled together prevents iOS double-tap
@@ -41,9 +62,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
+    <html
+      lang="en"
+      className={`${inter.variable} ${archivo.variable} ${plexMono.variable}`}
+    >
       <body>
-        <AccentProvider />
+        <DaypartProvider />
         <ServiceWorkerRegister />
         <PwaMode />
         <SwrProvider>

@@ -8,7 +8,8 @@ export type Units = {
   liquid: "oz" | "ml";
 };
 
-export type AccentColor = "violet" | "emerald" | "rose" | "amber";
+/** "auto" = follow the sun (daypart-driven accent, the default). */
+export type AccentColor = "auto" | "violet" | "emerald" | "rose" | "amber";
 
 export type DayType = string;
 

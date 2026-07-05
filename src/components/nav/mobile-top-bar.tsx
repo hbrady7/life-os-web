@@ -1,15 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { Activity, Brain, BookOpen, Scale, Settings, Sparkles } from "lucide-react";
+import { Settings, Sparkles } from "lucide-react";
+import { HorizonBand } from "@/components/horizon-band";
 
 /**
- * Mobile-only top bar — safe-area inset + a small icon row.
- *
- * The bottom tab bar holds five primary tabs per iOS HIG; Journal +
- * Body lost their slots in the 7→5 reduction, so we surface them
- * here for one-tap access on every screen. Settings rounds out the
- * trio. Each button is a 44×44 target.
+ * Mobile-only top chrome: the horizon band runs along the top edge
+ * (under the notch) as the app's signature, with Mentor + Settings as
+ * the only two icons — every other surface now lives in the bottom
+ * nav's four domains. Buttons are 44x44 targets.
  */
 export function MobileTopBar() {
   return (
@@ -17,21 +16,10 @@ export function MobileTopBar() {
       className="fixed top-0 left-0 right-0 z-30 pointer-events-none md:hidden"
       style={{ paddingTop: "env(safe-area-inset-top)" }}
     >
+      <HorizonBand height={2} className="pointer-events-none" />
       <div className="flex justify-end items-center gap-2 px-3 py-2">
         <TopIcon href="/mentor" label="Mentor">
           <Sparkles size={17} />
-        </TopIcon>
-        <TopIcon href="/vitality" label="Vitality">
-          <Activity size={17} />
-        </TopIcon>
-        <TopIcon href="/mind" label="Mind">
-          <Brain size={17} />
-        </TopIcon>
-        <TopIcon href="/journal" label="Journal">
-          <BookOpen size={17} />
-        </TopIcon>
-        <TopIcon href="/body" label="Body">
-          <Scale size={17} />
         </TopIcon>
         <TopIcon href="/settings" label="Settings">
           <Settings size={17} />

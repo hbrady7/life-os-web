@@ -83,7 +83,6 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
   try {
     const data: Record<string, unknown> = {};
     for (const [name, table] of TABLES) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const t = table as any;
       data[name] = await db.select().from(t).where(eq(t.userId, userId));
     }

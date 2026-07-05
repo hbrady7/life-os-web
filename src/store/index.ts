@@ -345,7 +345,7 @@ type Actions = {
 
 const defaultSettings = (): Settings => ({
   units: { weight: "lb", liquid: "oz" },
-  accent: "violet",
+  accent: "auto",
   dayTypePresets: DEFAULT_DAY_TYPES,
   hasOnboarded: false,
   waterTargetOz: 96,

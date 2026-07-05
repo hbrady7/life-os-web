@@ -1,24 +1,35 @@
 @import "tailwindcss";
 
+/* ============================================================
+ * LIFE OS — circadian instrument theme
+ * Cool blue-black instrument surfaces; the accent follows the sun
+ * (see src/lib/daypart.ts + daypart-provider.tsx). Chrome is quiet;
+ * color belongs to data and to the dawn/dusk ritual moments.
+ * ============================================================ */
+
 @theme {
-  --color-base: #050507;
-  --color-card: #0F0F12;
-  --color-card-hover: #14141A;
-  --color-elevated: #14141A;
+  --color-base: #06070C;
+  --color-card: #0C0F16;
+  --color-card-hover: #121623;
+  --color-elevated: #121623;
   /* Vitals tier reads as "above" the card surface — slightly lighter
    * resting state plus a 5% white top-edge inner highlight in .vitals-tile. */
-  --color-vitals-surface: #13131A;
-  --color-vitals-surface-hover: #1A1A22;
-  --color-stroke: #1A1A1F;
-  --color-stroke-strong: #26262E;
+  --color-vitals-surface: #10141E;
+  --color-vitals-surface-hover: #171C2A;
+  --color-stroke: #1A1E2B;
+  --color-stroke-strong: #272E42;
 
-  --color-fg: #F5F5F7;
-  --color-fg-2: #8E8E93;
-  --color-fg-3: #48484A;
+  --color-fg: #F2F4FA;
+  --color-fg-2: #9AA2B8;
+  --color-fg-3: #4E5570;
 
-  --color-accent: #A78BFA;
-  --color-accent-strong: #8B5CF6;
-  --color-accent-soft: rgba(167, 139, 250, 0.14);
+  /* Accent defaults = dusk. DaypartProvider overwrites these on the
+   * root at runtime (follow-the-sun, or the user's pinned hue). Always
+   * pair a strong-accent fill with --color-accent-contrast text. */
+  --color-accent: #C0A6F5;
+  --color-accent-strong: #A47FF0;
+  --color-accent-soft: rgba(192, 166, 245, 0.13);
+  --color-accent-contrast: #150B27;
 
   --color-success: #34D399;
   --color-warning: #FBBF24;
@@ -38,7 +49,7 @@
   --mc-calories-2: #FBBF24;
   --mc-calories-soft: rgba(245, 158, 11, 0.14);
 
-  --mc-protein: #A78BFA;        /* matches existing accent violet */
+  --mc-protein: #A78BFA;
   --mc-protein-2: #C4B5FD;
   --mc-protein-soft: rgba(167, 139, 250, 0.14);
 
@@ -84,14 +95,11 @@
   --mc-rhr-2: #FCA5A5;
   --mc-rhr-soft: rgba(248, 113, 113, 0.14);
 
-  --mc-cardio: #FDA4AF;         /* rose-300 — cardio load. semantically heart-y without colliding with rhr coral or mood rose */
-  --mc-cardio-2: #FECDD3;       /* rose-200 — lighter sibling for gradient highlights */
+  --mc-cardio: #FDA4AF;         /* rose-300 — cardio load */
+  --mc-cardio-2: #FECDD3;
   --mc-cardio-soft: rgba(253, 164, 175, 0.14);
 
-  /* Peak State — the synthesized hero score. Mint (teal-300) is the
-   * solid; the ring uses a violet → mint gradient to communicate
-   * "fusion of all systems" without competing with any single metric
-   * color. Distinct from --color-success (emerald-400) on purpose. */
+  /* Peak State — the synthesized hero score. */
   --mc-peak: #5EEAD4;            /* teal-300 */
   --mc-peak-2: #99F6E4;          /* teal-200 */
   --mc-peak-soft: rgba(94, 234, 212, 0.14);
@@ -127,11 +135,18 @@
                  0 8px 32px -16px rgba(0, 0, 0, 0.7);
   --shadow-float: 0 12px 40px -8px rgba(0, 0, 0, 0.7),
                   0 0 0 1px rgba(255, 255, 255, 0.04);
-  --shadow-glow: 0 0 0 1px rgba(167, 139, 250, 0.3),
-                 0 0 24px -4px rgba(167, 139, 250, 0.4);
+  --shadow-glow: 0 0 0 1px color-mix(in srgb, var(--color-accent) 30%, transparent),
+                 0 0 24px -4px color-mix(in srgb, var(--color-accent) 38%, transparent);
 
-  --font-sans: "Inter Variable", ui-sans-serif, system-ui, -apple-system,
+  /* Three voices: Inter carries UI, Archivo carries display moments
+   * (page titles, hero numerals), IBM Plex Mono carries data microtype
+   * (labels, timestamps, units). Loaded via next/font in layout.tsx. */
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, -apple-system,
                "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
+  --font-display: var(--font-archivo), var(--font-inter), ui-sans-serif,
+                  system-ui, sans-serif;
+  --font-mono: var(--font-plex-mono), ui-monospace, "SF Mono", Menlo,
+               Consolas, monospace;
 
   --ease-spring: cubic-bezier(0.22, 1, 0.36, 1);
 }
@@ -139,9 +154,28 @@
 @layer base {
   :root {
     color-scheme: dark;
-    --accent-h: 258;
-    --accent-s: 90%;
-    --accent-l: 76%;
+    /* Ambient tint (hsl triplet) — the daypart's atmosphere, painted as
+     * a faint radial glow at the top of the viewport. Overridden per
+     * html[data-daypart]. Default = night. */
+    --ambient: 232 60% 62%;
+    --ambient-strength: 0.07;
+  }
+
+  html[data-daypart="dawn"] {
+    --ambient: 28 85% 62%;
+    --ambient-strength: 0.09;
+  }
+  html[data-daypart="day"] {
+    --ambient: 220 55% 78%;
+    --ambient-strength: 0.05;
+  }
+  html[data-daypart="dusk"] {
+    --ambient: 262 75% 66%;
+    --ambient-strength: 0.09;
+  }
+  html[data-daypart="night"] {
+    --ambient: 232 60% 62%;
+    --ambient-strength: 0.07;
   }
 
   html,
@@ -161,19 +195,37 @@
     min-height: 100dvh;
   }
 
+  /* Ambient daypart glow + film grain. Both live at z-index -1 so they
+   * paint over the base background but under all content — zero
+   * compositing cost on the interactive layer, no text interference. */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background:
+      radial-gradient(
+        110% 42% at 50% -8%,
+        hsl(var(--ambient) / var(--ambient-strength)),
+        transparent 62%
+      );
+  }
+  body::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    opacity: 0.5;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='matrix' values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0.05 0'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)'/%3E%3C/svg%3E");
+    background-repeat: repeat;
+    background-size: 120px 120px;
+  }
+
   /* PWA standalone mode hook.
-   *
-   * <PwaMode /> (src/components/pwa-mode.tsx) sets
-   * `html[data-pwa="standalone"]` on mount when display-mode is
-   * standalone (or the legacy iOS navigator.standalone is true).
-   * Targets that need a tweak only in installed-PWA mode use:
-   *
-   *   html[data-pwa="standalone"] .my-thing { … }
-   *
-   * The browser-tab case stays default — no URL-bar-derived spacing
-   * lives anywhere in the layout, so nothing breaks if the attribute
-   * is absent. The empty selector below is documentation; specific
-   * tweaks land alongside the components that need them. */
+   * <PwaMode /> sets html[data-pwa="standalone"] when launched as an
+   * installed PWA. Standalone-only tweaks target that attribute. */
   html[data-pwa="standalone"] {
     /* hook anchor — keep selector live even when no rules apply */
   }
@@ -305,12 +357,27 @@
     border-color: var(--color-stroke-strong);
   }
 
+  /* Section eyebrow — the instrument voice. Mono, uppercase, wide
+   * tracking. This is the single most repeated identity element. */
   .label {
-    font-size: 11px;
+    font-family: var(--font-mono);
+    font-size: 10px;
     text-transform: uppercase;
-    letter-spacing: 0.14em;
+    letter-spacing: 0.16em;
     color: var(--color-fg-3);
     font-weight: 500;
+  }
+
+  /* Display voice — page titles + hero numerals. Pair with a weight
+   * (font-bold/font-extrabold) per use. */
+  .display {
+    font-family: var(--font-display);
+    letter-spacing: -0.02em;
+  }
+  .display-num {
+    font-family: var(--font-display);
+    letter-spacing: -0.03em;
+    font-variant-numeric: tabular-nums;
   }
 
   .accent-ring:focus-visible {
@@ -320,15 +387,25 @@
   }
 
   .grad-hero {
-    background: linear-gradient(135deg, #8B5CF6 0%, #6366F1 100%);
+    background: linear-gradient(
+      135deg,
+      var(--color-accent-strong) 0%,
+      color-mix(in srgb, var(--color-accent-strong) 55%, #202A4A) 100%
+    );
   }
   .grad-soft {
-    background: linear-gradient(180deg,
-      rgba(139, 92, 246, 0.08) 0%,
-      transparent 100%);
+    background: linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--color-accent) 8%, transparent) 0%,
+      transparent 100%
+    );
   }
   .text-grad {
-    background: linear-gradient(135deg, #C4B5FD 0%, #818CF8 100%);
+    background: linear-gradient(
+      135deg,
+      var(--color-accent) 0%,
+      color-mix(in srgb, var(--color-accent) 55%, #8FA0D8) 100%
+    );
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
@@ -336,6 +413,13 @@
 
   .ring-anim {
     transition: stroke-dashoffset 480ms var(--ease-spring);
+  }
+
+  /* Frosted chrome for floating bars (nav, sheets). */
+  .glass {
+    background: color-mix(in srgb, var(--color-base) 82%, transparent);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
   }
 }
 

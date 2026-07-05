@@ -25,6 +25,7 @@ const ACCENT_SWATCH: Array<{
   color: string;
   grad: string;
 }> = [
+  { key: "auto", label: "Follow the sun", color: "#A47FF0", grad: "linear-gradient(135deg,#EE9A3F 0%,#E9EDF6 38%,#A47FF0 72%,#6C7FF2 100%)" },
   { key: "violet", label: "Violet", color: "#8B5CF6", grad: "linear-gradient(135deg,#8B5CF6,#6366F1)" },
   { key: "emerald", label: "Emerald", color: "#10B981", grad: "linear-gradient(135deg,#10B981,#059669)" },
   { key: "rose", label: "Rose", color: "#F43F5E", grad: "linear-gradient(135deg,#F43F5E,#BE185D)" },
@@ -44,7 +45,7 @@ export default function OnboardingPage() {
   const [step, setStep] = React.useState(0);
   const [weight, setWeight] = React.useState<"lb" | "kg">("lb");
   const [liquid, setLiquid] = React.useState<"oz" | "ml">("oz");
-  const [accent, setAccentState] = React.useState<AccentColor>("violet");
+  const [accent, setAccentState] = React.useState<AccentColor>("auto");
   const [picked, setPicked] = React.useState<Set<string>>(new Set());
   const [routinePicked, setRoutinePicked] = React.useState<Set<string>>(
     () => new Set(DEFAULT_MORNING_ROUTINE.map((d) => d.name))
