@@ -53,7 +53,7 @@ const GROUPS: Group[] = [
   {
     label: "Mind",
     items: [
-      { href: "/mind", label: "Mind", Icon: Brain },
+      { href: "/mind", label: "Overview", Icon: Brain },
       { href: "/journal", label: "Journal", Icon: BookOpen },
       { href: "/mentor", label: "Mentor", Icon: Sparkles },
     ],

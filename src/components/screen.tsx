@@ -1,7 +1,10 @@
 "use client";
 
 import * as React from "react";
+import { usePathname } from "next/navigation";
 import { motion } from "motion/react";
+import { DomainTabs } from "@/components/nav/domain-tabs";
+import { domainForPath } from "@/lib/domains";
 import { cn } from "@/lib/utils";
 
 type Props = {
@@ -26,6 +29,12 @@ export function Screen({
   eyebrow,
   width = "default",
 }: Props) {
+  // Domain chrome is inferred from the route so member pages get the
+  // eyebrow + sibling tabs without any per-page wiring.
+  const pathname = usePathname();
+  const domain = domainForPath(pathname);
+  const shownEyebrow = eyebrow ?? domain?.label;
+
   return (
     <motion.main
       initial={{ opacity: 0, y: 8 }}
@@ -46,17 +55,24 @@ export function Screen({
         className
       )}
     >
-      {(title || subtitle || eyebrow) && (
-        <header className="mb-4 md:mb-6">
-          {eyebrow && <div className="label mb-1.5">{eyebrow}</div>}
-          {title && (
-            <h1 className="display text-[26px] md:text-[30px] font-bold">
-              {title}
-            </h1>
-          )}
-          {subtitle && (
-            <p className="text-sm text-[var(--color-fg-2)] mt-1">{subtitle}</p>
-          )}
+      {(title || subtitle || shownEyebrow || domain) && (
+        <header className="mb-4 md:mb-6 space-y-3">
+          <div>
+            {shownEyebrow && (
+              <div className="label mb-1.5">{shownEyebrow}</div>
+            )}
+            {title && (
+              <h1 className="display text-[26px] md:text-[30px] font-bold">
+                {title}
+              </h1>
+            )}
+            {subtitle && (
+              <p className="text-sm text-[var(--color-fg-2)] mt-1">
+                {subtitle}
+              </p>
+            )}
+          </div>
+          {domain && <DomainTabs />}
         </header>
       )}
       {/* Inter-card rhythm: 12 mobile / 16 desktop. */}
