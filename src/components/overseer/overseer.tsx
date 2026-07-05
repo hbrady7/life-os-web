@@ -317,7 +317,7 @@ export function Overseer() {
                       type="submit"
                       disabled={!draft.trim() || error?.kind === "no-key"}
                       aria-label="Send"
-                      className="h-11 w-11 grid place-items-center rounded-xl bg-[var(--color-accent-strong)] text-white active:scale-95 transition disabled:opacity-40"
+                      className="h-11 w-11 grid place-items-center rounded-xl bg-[var(--color-accent-strong)] text-[var(--color-accent-contrast)] active:scale-95 transition disabled:opacity-40"
                     >
                       <Send size={17} />
                     </button>
@@ -346,7 +346,7 @@ function Bubble({
         className={
           "max-w-[88%] whitespace-pre-wrap text-[15px] leading-[1.45] rounded-2xl px-3.5 py-2.5 " +
           (isUser
-            ? "bg-[var(--color-accent-strong)] text-white rounded-br-md"
+            ? "bg-[var(--color-accent-strong)] text-[var(--color-accent-contrast)] rounded-br-md"
             : "bg-[var(--color-elevated)] text-[var(--color-fg)] rounded-bl-md border border-[var(--color-stroke)]")
         }
       >
@@ -418,7 +418,7 @@ function NoKeyState() {
           href="https://aistudio.google.com/apikey"
           target="_blank"
           rel="noreferrer noopener"
-          className="inline-flex items-center gap-1.5 h-9 px-4 rounded-full bg-[var(--color-accent-strong)] text-white text-xs font-medium hover:brightness-110"
+          className="inline-flex items-center gap-1.5 h-9 px-4 rounded-full bg-[var(--color-accent-strong)] text-[var(--color-accent-contrast)] text-xs font-medium hover:brightness-110"
         >
           Get a free key
           <ExternalLink size={12} />

@@ -57,7 +57,7 @@ export function SignInButton({
         <button
           type="submit"
           disabled={!csrfToken}
-          className="w-full h-12 rounded-xl bg-[var(--color-accent-strong)] text-white font-medium inline-flex items-center justify-center gap-2 shadow-[var(--shadow-glow)] active:scale-[0.98] transition disabled:opacity-70"
+          className="w-full h-12 rounded-xl bg-[var(--color-accent-strong)] text-[var(--color-accent-contrast)] font-medium inline-flex items-center justify-center gap-2 shadow-[var(--shadow-glow)] active:scale-[0.98] transition disabled:opacity-70"
         >
           {csrfToken ? <LogIn size={18} /> : <Loader2 size={18} className="animate-spin" />}
           {LABEL[provider]}

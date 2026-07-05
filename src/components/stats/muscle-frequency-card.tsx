@@ -64,7 +64,7 @@ export function MuscleFrequencyCard() {
             className={cn(
               "h-6 px-2 rounded-md text-[11px] tnum",
               range === "28"
-                ? "bg-[var(--color-accent-strong)] text-white"
+                ? "bg-[var(--color-accent-strong)] text-[var(--color-accent-contrast)]"
                 : "bg-[var(--color-elevated)] border border-[var(--color-stroke)] text-[var(--color-fg-2)]"
             )}
           >
@@ -76,7 +76,7 @@ export function MuscleFrequencyCard() {
             className={cn(
               "h-6 px-2 rounded-md text-[11px] tnum",
               range === "56"
-                ? "bg-[var(--color-accent-strong)] text-white"
+                ? "bg-[var(--color-accent-strong)] text-[var(--color-accent-contrast)]"
                 : "bg-[var(--color-elevated)] border border-[var(--color-stroke)] text-[var(--color-fg-2)]"
             )}
           >

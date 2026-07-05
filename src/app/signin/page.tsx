@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { AlertTriangle } from "lucide-react";
 import { auth, checkAuthConfig } from "@/auth";
 import { SignInButton } from "@/components/sign-in-button";
+import { HorizonBand } from "@/components/horizon-band";
 
 export const metadata = {
   title: "Sign in · Life OS",
@@ -24,8 +25,14 @@ export default async function SignInPage({
     <main className="min-h-dvh grid place-items-center px-6 py-12">
       <div className="w-full max-w-sm">
         <div className="mb-8 text-center">
-          <h1 className="text-[28px] font-bold tracking-tight">Life OS</h1>
-          <p className="mt-2 text-sm text-[var(--color-fg-2)]">
+          <div className="label mb-3">Your day, on one deck</div>
+          <h1 className="display text-[34px] font-extrabold leading-none">
+            LIFE <span className="text-[var(--color-accent)]">OS</span>
+          </h1>
+          <div className="mx-auto mt-5 max-w-[200px]">
+            <HorizonBand height={3} />
+          </div>
+          <p className="mt-5 text-sm text-[var(--color-fg-2)]">
             Sign in to sync across your devices.
           </p>
         </div>

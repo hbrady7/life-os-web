@@ -87,7 +87,7 @@ export function PlateCalculatorPopup({
               className={cn(
                 "h-8 px-3 rounded-full text-[12px] tnum transition-colors",
                 selected
-                  ? "bg-[var(--color-accent-strong)] text-white border border-transparent"
+                  ? "bg-[var(--color-accent-strong)] text-[var(--color-accent-contrast)] border border-transparent"
                   : "bg-[var(--color-elevated)] border border-[var(--color-stroke)] text-[var(--color-fg-2)]"
               )}
             >

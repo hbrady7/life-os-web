@@ -147,7 +147,7 @@ export default function JournalPage() {
               className={cn(
                 "h-7 px-3 inline-flex items-center gap-1.5 rounded-full text-[11px] font-medium shrink-0 transition",
                 active
-                  ? "bg-[var(--color-accent-strong)] text-white"
+                  ? "bg-[var(--color-accent-strong)] text-[var(--color-accent-contrast)]"
                   : "bg-[var(--color-elevated)] text-[var(--color-fg-2)] hover:text-[var(--color-fg)]"
               )}
             >

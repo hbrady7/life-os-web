@@ -4,7 +4,13 @@
 
 ## What Life OS is
 
-A mobile-first PWA personal command center: goals, habits, mood/sleep/water/weight/steps, nutrition, workouts, journal, and a Gemini-powered AI coach ("Overseer") that sees the whole picture. Dark, premium, fast. **No backend, no auth, no DB** — everything persists to `localStorage` under the key `life-os:v2`.
+A personal command center: goals, habits, mood/sleep/water/weight/steps, nutrition, workouts, journal, and a Gemini-powered AI coach ("Overseer") that sees the whole picture. Auth-gated (Auth.js), synced to Neon Postgres, installable as a PWA, wrapped for iOS via Capacitor.
+
+**The v3 identity is the "circadian instrument":** cool blue-black surfaces, and chrome that follows the sun. A daypart engine (`src/lib/daypart.ts` — dawn 5–11 / day 11–17 / dusk 17–21 / night 21–5) drives the accent color and an ambient tint via `html[data-daypart]` + accent CSS vars set by `DaypartProvider`. Midday accent is deliberately near-white (monochrome focus hours); warmth belongs to dawn/dusk rituals. The signature element is the **HorizonBand** — a 24h gradient strip with a live now-marker — mounted in the sidebar, the mobile top bar, the deck header, and the sign-in page.
+
+**IA: four domains.** Today (`/` — the command deck), Health (Vitality/Gym/Nutrition/Body), Mind (Overview/Journal/Mentor), Trends (Stats/Habits). `src/lib/domains.ts` is the single config; `<Screen>` auto-renders the domain eyebrow + `DomainTabs` sibling pills on member pages. Desktop nav is the fixed sidebar (`nav/sidebar.tsx`, content offset `md:pl-60`); mobile is a four-tab bottom nav around the raised center Log button.
+
+**Quick-log is ambient.** `QuickLogHost` (mounted in AppShell) owns the log sheet, the five metric modals, and the command bar; open them via the store's `openQuickLog(kind?)` / `setQuickLogSearch(true)` from anywhere. ⌘K = search & log, ⌘J = log sheet.
 
 ---
 
@@ -68,11 +74,11 @@ src/
     ui/                        # primitives: button, card, modal, input, slider, pill, etc.
     today/                     # day-screen-scoped cards + log modals
       log-modals/              # tap-to-log sheets (sleep, mood, water, weight, energy, steps)
-    nav/                       # BottomNav + floating Settings gear
+    nav/                       # Sidebar (desktop), BottomNav + MobileTopBar, DomainTabs, QuickLogSheet
     overseer/                  # floating AI panel + context
     stats/, journal/           # per-screen subcomponents
     screen.tsx                 # page chrome wrapper (max-w-[640px], safe-area paddings)
-    hydrate-gate.tsx, accent-provider.tsx, sw-register.tsx
+    hydrate-gate.tsx, daypart-provider.tsx, quick-log-host.tsx, horizon-band.tsx, sw-register.tsx
   lib/
     types.ts                   # ALL shared types + DEFAULT_* constants. Source of truth.
     date.ts                    # DateStr helpers (todayStr, fromDateStr, format, diffDays, ...)
@@ -121,19 +127,19 @@ const c = metricColors("sleep");
 <Line stroke={metricHex("sleep")} />
 ```
 
-**Surfaces** (dark theme):
+**Surfaces** (cool blue-black instrument):
 | Token | Purpose |
 |---|---|
-| `--color-base` | page background `#050507` |
-| `--color-card` | card surface `#0F0F12` |
-| `--color-card-hover` | card hover `#14141A` |
-| `--color-elevated` | inputs, controls `#14141A` |
-| `--color-stroke` | hairline border `#1A1A1F` |
-| `--color-stroke-strong` | emphasized border `#26262E` |
+| `--color-base` | page background `#06070C` |
+| `--color-card` | card surface `#0C0F16` |
+| `--color-card-hover` | card hover `#121623` |
+| `--color-elevated` | inputs, controls `#121623` |
+| `--color-stroke` | hairline border `#1A1E2B` |
+| `--color-stroke-strong` | emphasized border `#272E42` |
 
-**Text:** `--color-fg` (primary), `--color-fg-2` (secondary, ~`#8E8E93`), `--color-fg-3` (tertiary, ~`#48484A`).
+**Text:** `--color-fg` (primary `#F2F4FA`), `--color-fg-2` (secondary `#9AA2B8`), `--color-fg-3` (tertiary `#4E5570`).
 
-**Accent** (theme-able via `AccentProvider`): `--color-accent`, `--color-accent-strong`, `--color-accent-soft`. Default violet. Onboarding lets users pick violet / emerald / rose / amber (see `ACCENT_HUES` in `lib/utils.ts`).
+**Accent** (circadian via `DaypartProvider`): `--color-accent`, `--color-accent-strong`, `--color-accent-soft`, and `--color-accent-contrast` (text/icon color ON a strong fill). Default `settings.accent = "auto"` follows the sun (dawn gold → day near-white → dusk violet → night indigo, specs in `lib/daypart.ts`); users can pin violet/emerald/rose/amber. **RULE: never `text-white` on an accent fill — always `text-[var(--color-accent-contrast)]`** (the midday accent is near-white; white-on-white is invisible). The ambient page tint comes free from `html[data-daypart]` CSS in globals.
 
 **Semantic:** `--color-success` (emerald), `--color-warning` (amber), `--color-danger` (rose). Priorities: `--color-p1` (rose), `--color-p2` (amber), `--color-p3` (blue).
 
@@ -158,9 +164,14 @@ const c = metricColors("sleep");
 
 **Streak tiers** — `streakTier(n)` returns `{ color, glow, showFlame }`. Bronze ≥3, orange ≥7, gold ≥30.
 
-### Typography
+### Typography — three voices
 
-- Font family: **Inter Variable** via `--font-sans` (system fallback chain in the var).
+Loaded via `next/font` in `layout.tsx`; referenced through `@theme` vars:
+
+- **Inter** (`--font-sans`) — all UI text. The default; you rarely type it.
+- **Archivo** (`--font-display`, has the `wdth` axis) — display moments only: page titles, hero numerals, the wordmark. Use the `.display` utility (or `.display-num` for tabular hero digits) plus a weight per use. Don't body-copy in it.
+- **IBM Plex Mono** (`--font-mono`) — data microtype: the `.label` eyebrow, timestamps, kbd hints, unit suffixes. `font-mono` works as a Tailwind utility.
+
 - Numbers: add `.tnum` (tabular-nums) anywhere digits update — counters, sparkline tooltips, durations, kcal.
 - Inputs on mobile must be `font-size: 16px` to suppress iOS zoom-on-focus — use the `.no-zoom` utility when needed.
 
@@ -168,9 +179,9 @@ const c = metricColors("sleep");
 
 | Tier | Use for | Size (mobile / desktop) |
 |---|---|---|
-| Display | Hero numbers (Peak State, Vitals values) | `text-[48px]` – `text-[60px]`, always `.tnum` |
-| Title | Page headers (`<Screen title>`) | `text-[26px]` mobile / `text-[28px]` desktop, `font-bold tracking-tight` |
-| Section header | "What's moving your score" etc. | the `.label` utility — `11px uppercase tracking-[0.14em] text-fg-3 font-medium` |
+| Display | Hero numbers (Peak State, day-close score) | `.display-num`, `text-[44px]` – `text-[60px]` |
+| Title | Page headers (`<Screen title>`) | `.display font-bold`, `text-[26px]` / `text-[30px]` |
+| Section header | "What's moving your score" etc. | the `.label` utility — mono `10px uppercase tracking-[0.16em] text-fg-3` |
 | Subtitle | Page subtitle, card descriptions | `text-sm text-[var(--color-fg-2)]` (14px) |
 | Body | Standard text | `text-[15px]` – `text-base` (15-16px) |
 | Caption | Helper / muted text | `text-xs text-[var(--color-fg-3)]` (12px) |

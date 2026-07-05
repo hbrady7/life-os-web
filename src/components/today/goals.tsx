@@ -232,7 +232,7 @@ export function Goals() {
           type="submit"
           aria-label="Add"
           disabled={!draft.trim()}
-          className="h-11 w-11 grid place-items-center rounded-xl bg-[var(--color-accent-strong)] text-white active:scale-95 transition disabled:opacity-40"
+          className="h-11 w-11 grid place-items-center rounded-xl bg-[var(--color-accent-strong)] text-[var(--color-accent-contrast)] active:scale-95 transition disabled:opacity-40"
         >
           <Plus size={18} strokeWidth={2.4} />
         </button>

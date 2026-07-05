@@ -97,7 +97,7 @@ function HabitTile({
           className={cn(
             "h-7 w-7 grid place-items-center rounded-lg",
             doneToday
-              ? "bg-[var(--color-accent-strong)] text-white"
+              ? "bg-[var(--color-accent-strong)] text-[var(--color-accent-contrast)]"
               : "bg-[var(--color-card)] text-[var(--color-fg-2)]"
           )}
         >

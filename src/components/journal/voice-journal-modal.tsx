@@ -1080,7 +1080,7 @@ function TodoRow({
         className={cn(
           "shrink-0 mt-0.5 h-5 w-5 rounded-md grid place-items-center border transition",
           todo.checked
-            ? "bg-[var(--color-accent-strong)] border-[var(--color-accent-strong)] text-white"
+            ? "bg-[var(--color-accent-strong)] border-[var(--color-accent-strong)] text-[var(--color-accent-contrast)]"
             : "border-[var(--color-stroke-strong)] text-transparent"
         )}
       >

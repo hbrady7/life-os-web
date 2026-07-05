@@ -314,7 +314,7 @@ export function RecurringGoalEditModal({
                     className={cn(
                       "h-9 w-9 rounded-full text-xs font-medium border transition",
                       active
-                        ? "bg-[var(--color-accent-strong)] text-white border-transparent"
+                        ? "bg-[var(--color-accent-strong)] text-[var(--color-accent-contrast)] border-transparent"
                         : "border-[var(--color-stroke)] text-[var(--color-fg-2)]"
                     )}
                   >

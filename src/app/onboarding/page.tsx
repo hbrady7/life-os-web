@@ -232,7 +232,7 @@ export default function OnboardingPage() {
                       className={cn(
                         "h-8 w-8 grid place-items-center rounded-lg",
                         on
-                          ? "bg-[var(--color-accent-strong)] text-white"
+                          ? "bg-[var(--color-accent-strong)] text-[var(--color-accent-contrast)]"
                           : "bg-[var(--color-card)] text-[var(--color-fg-2)]"
                       )}
                     >
@@ -287,7 +287,7 @@ export default function OnboardingPage() {
                     className={cn(
                       "h-5 w-5 grid place-items-center rounded-md border transition",
                       on
-                        ? "bg-[var(--color-accent-strong)] border-[var(--color-accent-strong)] text-white"
+                        ? "bg-[var(--color-accent-strong)] border-[var(--color-accent-strong)] text-[var(--color-accent-contrast)]"
                         : "border-[var(--color-stroke-strong)]"
                     )}
                   >
@@ -331,7 +331,7 @@ export default function OnboardingPage() {
                     className={cn(
                       "h-5 w-5 grid place-items-center rounded-md border transition",
                       on
-                        ? "bg-[var(--color-accent-strong)] border-[var(--color-accent-strong)] text-white"
+                        ? "bg-[var(--color-accent-strong)] border-[var(--color-accent-strong)] text-[var(--color-accent-contrast)]"
                         : "border-[var(--color-stroke-strong)]"
                     )}
                   >
@@ -394,7 +394,7 @@ export default function OnboardingPage() {
                         className={cn(
                           "h-9 w-9 rounded-full text-xs font-medium border transition",
                           active
-                            ? "bg-[var(--color-accent-strong)] text-white border-transparent"
+                            ? "bg-[var(--color-accent-strong)] text-[var(--color-accent-contrast)] border-transparent"
                             : "border-[var(--color-stroke)] text-[var(--color-fg-2)]"
                         )}
                       >

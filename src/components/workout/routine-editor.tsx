@@ -319,7 +319,7 @@ export function RoutineEditor({ open, onClose, routineId }: Props) {
                       "h-11 rounded-lg text-[13px] font-semibold border",
                       "active:scale-[0.94] transition-transform duration-[80ms]",
                       selected
-                        ? "bg-[var(--color-accent-strong)] text-white border-transparent"
+                        ? "bg-[var(--color-accent-strong)] text-[var(--color-accent-contrast)] border-transparent"
                         : "bg-[var(--color-elevated)] border-[var(--color-stroke)] text-[var(--color-fg-2)]"
                     )}
                   >

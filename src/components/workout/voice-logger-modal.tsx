@@ -448,7 +448,7 @@ function IdleView({ onClick }: { onClick: () => void }) {
         onClick={onClick}
         className={cn(
           "h-20 w-20 rounded-full grid place-items-center",
-          "bg-[var(--color-accent-strong)] text-white",
+          "bg-[var(--color-accent-strong)] text-[var(--color-accent-contrast)]",
           "shadow-[var(--shadow-glow)]",
           "active:scale-[0.94] transition-transform duration-[80ms]"
         )}
@@ -596,7 +596,7 @@ function PreviewView({
                   className={cn(
                     "shrink-0 mt-0.5 h-5 w-5 rounded-md grid place-items-center border transition",
                     checked
-                      ? "bg-[var(--color-accent-strong)] border-[var(--color-accent-strong)] text-white"
+                      ? "bg-[var(--color-accent-strong)] border-[var(--color-accent-strong)] text-[var(--color-accent-contrast)]"
                       : "border-[var(--color-stroke-strong)] text-transparent"
                   )}
                 >

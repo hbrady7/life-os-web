@@ -261,7 +261,7 @@ function FilterChip({
         "h-8 px-3 rounded-full text-[12px] font-medium",
         "active:scale-[0.97] transition-transform duration-[80ms]",
         active
-          ? "bg-[var(--color-accent-strong)] text-white"
+          ? "bg-[var(--color-accent-strong)] text-[var(--color-accent-contrast)]"
           : "bg-[var(--color-elevated)] text-[var(--color-fg-2)] border border-[var(--color-stroke)]"
       )}
     >

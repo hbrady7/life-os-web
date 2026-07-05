@@ -29,7 +29,7 @@ export function Checkbox({
       className={cn(
         "shrink-0 grid place-items-center rounded-md border transition active:scale-90",
         checked
-          ? "bg-[var(--color-accent-strong)] border-[var(--color-accent-strong)] text-white"
+          ? "bg-[var(--color-accent-strong)] border-[var(--color-accent-strong)] text-[var(--color-accent-contrast)]"
           : "bg-transparent border-[var(--color-stroke-strong)] hover:border-[var(--color-fg-2)]",
         className
       )}

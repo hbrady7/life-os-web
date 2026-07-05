@@ -454,7 +454,7 @@ function YearChip({
       onClick={onClick}
       className={
         active
-          ? "h-7 px-3 rounded-full text-[11px] font-medium bg-[var(--color-accent-strong)] text-white"
+          ? "h-7 px-3 rounded-full text-[11px] font-medium bg-[var(--color-accent-strong)] text-[var(--color-accent-contrast)]"
           : "h-7 px-3 rounded-full text-[11px] font-medium bg-[var(--color-elevated)] border border-[var(--color-stroke)] text-[var(--color-fg-2)]"
       }
     >

@@ -19,12 +19,19 @@ import { cn } from "@/lib/utils";
 import { haptic } from "@/lib/haptics";
 import { useDay } from "./day-context";
 
-const GREETING: Record<Daypart, string> = {
-  dawn: "Good morning.",
-  day: "Midday. Stay on it.",
-  dusk: "Good evening.",
-  night: "Wind it down.",
-};
+function greetingFor(daypart: Daypart, firstName: string | null): string {
+  const name = firstName ? `, ${firstName}` : "";
+  switch (daypart) {
+    case "dawn":
+      return `Good morning${name}.`;
+    case "day":
+      return "Midday. Stay on it.";
+    case "dusk":
+      return `Good evening${name}.`;
+    case "night":
+      return "Wind it down.";
+  }
+}
 
 /**
  * The deck's masthead: mono date eyebrow, display-face greeting (or the
@@ -32,7 +39,7 @@ const GREETING: Record<Daypart, string> = {
  * Carries over every behavior of the old TodayHeader — prev/next day,
  * native date picker, day-type chip, score ring.
  */
-export function DeckHeader() {
+export function DeckHeader({ firstName }: { firstName?: string | null }) {
   const {
     date,
     step,
@@ -74,7 +81,9 @@ export function DeckHeader() {
   const maxDate = shiftDate(todayStr(), daysForward);
 
   const heading =
-    isToday && daypart ? GREETING[daypart] : `${weekday}, ${monthDay}`;
+    isToday && daypart
+      ? greetingFor(daypart, firstName ?? null)
+      : `${weekday}, ${monthDay}`;
 
   return (
     <section className="card p-5 md:p-6 relative overflow-hidden">
