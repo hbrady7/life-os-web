@@ -26,7 +26,7 @@ import {
 } from "@/lib/data/metrics";
 import { listRoutineItems, listRoutineLogs } from "@/lib/data/routines";
 import { listWorkouts } from "@/lib/data/workouts";
-import { computeSleepScore } from "@/components/today/vitals/sleep-score";
+import { computeSleepScore } from "@/lib/sleep-score";
 import type { PeakStateInputs } from "./compute";
 
 const SLEEP_TARGET_HOURS = 8;

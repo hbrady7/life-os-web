@@ -121,7 +121,7 @@ export type PeakStateOutput = {
 // ─── tunables ────────────────────────────────────────────────────────────────
 
 const BASELINE_MIN_DAYS = 14;
-const SLEEP_TARGET_HOURS = 8; // matches lib/today/vitals/sleep-score.ts default
+const SLEEP_TARGET_HOURS = 8; // matches lib/sleep-score.ts default
 const SLEEP_DEBT_MAX_HOURS = 14; // 2h/night for 7 days saturates the floor
 const HEADLINE_HIDE_THRESHOLD = 4; // <4 inputs → peakState null
 
